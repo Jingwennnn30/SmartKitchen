@@ -5,6 +5,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import NearExpiredItems from './components/NearExpiredItems/NearExpiredItems';
 import InventoryPage from './components/Inventory/InventoryPage';
+import PreDiningPreparation from './components/PreDining/PreDiningPreparation';
+import OrderManagement from './components/OrderManagement/OrderManagement';
+import PerformanceTrends from './components/Performance/PerformanceTrends';
 import Sidebar from './components/Dashboard/Sidebar';
 import Header from './components/shared/Header';
 import { Box } from '@mui/material';
@@ -41,6 +44,9 @@ const AppLayout = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/near-expired-items" element={<NearExpiredItems />} />
+            <Route path="/pre-dining" element={<PreDiningPreparation />} />
+            <Route path="/order-management" element={<OrderManagement />} />
+            <Route path="/performance" element={<PerformanceTrends />} />
           </Routes>
         </Box>
       </Box>

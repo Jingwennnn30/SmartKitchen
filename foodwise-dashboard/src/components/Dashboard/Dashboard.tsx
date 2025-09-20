@@ -27,6 +27,11 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 const Dashboard = () => {
     return (
         <DashboardContainer>
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                    Dashboard
+                </Typography>
+            </Box>
             <Grid container spacing={3}>
                 {/* KPI Cards */}
                 <Grid item xs={12} sm={6} md={3}>
