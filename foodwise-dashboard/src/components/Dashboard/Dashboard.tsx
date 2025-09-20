@@ -144,7 +144,7 @@ const Dashboard = () => {
 
                 {/* Low Stock Alerts and Freezer Monitoring */}
                 <Grid item xs={12} md={6} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
-                    <StyledPaper sx={{ height: '320px', overflow: 'auto' }}>
+                    <StyledPaper sx={{ height: '300px', overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
                             Low Stock Alerts
                         </Typography>
@@ -153,7 +153,7 @@ const Dashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <StyledPaper sx={{ height: '320px', overflow: 'auto' }}>
+                    <StyledPaper sx={{ height: '300px'}}>
                         <FreezerMonitoring />
                     </StyledPaper>
                 </Grid>
