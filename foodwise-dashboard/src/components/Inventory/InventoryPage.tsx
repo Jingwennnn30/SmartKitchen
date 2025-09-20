@@ -20,7 +20,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import InputAdornment from '@mui/material/InputAdornment';
 import InventoryTable from './InventoryTable';
 import StockLevelChart from './StockLevelChart';
-import SeasonalityChart from './SeasonalityChart';
+import SeasonalityIndicators from './SeasonalityIndicators';
 import PredictedRestockTable from './PredictedRestockTable';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -31,8 +31,7 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 }));
 
 const PageTitle = styled(Typography)(({ theme }) => ({
-    fontWeight: 'bold',
-    marginBottom: theme.spacing(3)
+    fontWeight: 'bold'
 }));
 
 const categories = ['All', 'Meat', 'Vegetables', 'Dairy', 'Condiments'];
@@ -52,25 +51,21 @@ const InventoryPage = () => {
 
     return (
         <Box sx={{ padding: 3 }}>
-            <PageTitle variant="h5">Inventory</PageTitle>
-            
-            {/* Seasonality Awareness */}
-            <StyledPaper sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">Seasonality Awareness</Typography>
+            {/* Header with Seasonality Indicators */}
+            <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                mb: 4
+            }}>
+                <Box>
+                    <PageTitle variant="h5" gutterBottom>Inventory</PageTitle>
+                    <Typography variant="body2" color="text.secondary">
+                        Manage your stock levels and inventory overview
+                    </Typography>
                 </Box>
-                <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
-                        <SeasonalityChart type="dayOfWeek" />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <SeasonalityChart type="weather" />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <SeasonalityChart type="holiday" />
-                    </Grid>
-                </Grid>
-            </StyledPaper>
+                <SeasonalityIndicators />
+            </Box>
 
             {/* Stock Level Chart */}
             <StyledPaper sx={{ mb: 3 }}>
@@ -111,9 +106,14 @@ const InventoryPage = () => {
 
             {/* Inventory Overview */}
             <StyledPaper>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">Inventory Overview</Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Box>
+                        <Typography variant="h6" gutterBottom>Inventory Overview</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            View and manage your complete inventory
+                        </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                         <TextField
                             size="small"
                             placeholder="Search inventory..."
@@ -124,16 +124,23 @@ const InventoryPage = () => {
                                     <InputAdornment position="start">
                                         <SearchIcon />
                                     </InputAdornment>
-                                ),
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton onClick={handleImageUpload}>
-                                            <CameraAltIcon />
-                                        </IconButton>
-                                    </InputAdornment>
                                 )
                             }}
+                            sx={{ width: 250 }}
                         />
+                        <IconButton 
+                            onClick={handleImageUpload}
+                            sx={{ 
+                                bgcolor: 'primary.main', 
+                                color: 'white',
+                                '&:hover': {
+                                    bgcolor: 'primary.dark'
+                                }
+                            }}
+                            size="small"
+                        >
+                            <CameraAltIcon />
+                        </IconButton>
                     </Box>
                 </Box>
                 <InventoryTable searchQuery={searchQuery} />

@@ -30,14 +30,6 @@ const freezerAlerts: FreezerAlert[] = [
         normalTempRange: { min: -18, max: -14 },
         normalHumidityRange: { min: 60, max: 75 }
     },
-    {
-        id: 3,
-        name: 'Daily Use Freezer',
-        temperature: -13,
-        humidity: 78,
-        normalTempRange: { min: -18, max: -14 },
-        normalHumidityRange: { min: 60, max: 75 }
-    }
 ];
 
 const isTemperatureAlert = (freezer: FreezerAlert): boolean => {

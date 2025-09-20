@@ -50,7 +50,7 @@ const mockData: InventoryItem[] = [
         minRequired: 30,
         expiryDate: '2024-02-05',
         stockLevel: 45
-    }
+    },
 ];
 
 const getStockLevelColor = (level: number) => {
