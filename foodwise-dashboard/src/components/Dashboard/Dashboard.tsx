@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { styled } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 import KPICard from './KPICard';
 import InventoryTable from './InventoryTable';
 import StockUsageChart from './StockUsageChart';
@@ -21,10 +22,20 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
     height: '100%',
     borderRadius: '10px',
     boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-    backgroundColor: '#ffffff'
+    backgroundColor: '#ffffff',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)'
+    }
 }));
 
 const Dashboard = () => {
+    const navigate = useNavigate();
+
+    const handleGridClick = (path: string) => {
+        navigate(path);
+    };
     return (
         <DashboardContainer>
             <Box sx={{ mb: 4 }}>
@@ -40,7 +51,8 @@ const Dashboard = () => {
                         value: "RM 12,948",
                         icon: "💰",
                         valueColor: "#1976d2",
-                        bg: "#e3f2fd"
+                        bg: "#e3f2fd",
+                        path: "/inventory"
                     },
                     {
                         title: "Expiring Soon",
@@ -48,7 +60,8 @@ const Dashboard = () => {
                         subtitle: "within 3 days",
                         icon: "⏰",
                         valueColor: "#d32f2f",
-                        bg: "#ffebee"
+                        bg: "#ffebee",
+                        path: "/inventory"
                     },
                     {
                         title: "Average Waiting Time",
@@ -56,7 +69,8 @@ const Dashboard = () => {
                         icon: "⏳",
                         valueColor: "#fbc02d",
                         bg: "#fffde7",
-                        trend: "up"
+                        trend: "up",
+                        path: "/order-management"
                     },
                     {
                         title: "Waste This Week",
@@ -64,10 +78,14 @@ const Dashboard = () => {
                         icon: "♻️",
                         valueColor: "#388e3c",
                         bg: "#e8f5e9",
-                        trend: "down"
+                        trend: "down",
+                        path: "/performance"
                     }
                 ].map((kpi, idx) => (
-                    <Grid item xs={12} sm={6} md={3} key={kpi.title}>
+                    <Grid item xs={12} sm={6} md={3} key={kpi.title} 
+                        onClick={() => handleGridClick(kpi.path || '/')} 
+                        style={{ cursor: 'pointer' }}
+                    >
                         <Paper
                             elevation={3}
                             sx={{
@@ -125,7 +143,7 @@ const Dashboard = () => {
                 ))}
 
                 {/* Low Stock Alerts and Freezer Monitoring */}
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
                     <StyledPaper sx={{ height: '320px', overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
                             Low Stock Alerts
@@ -140,34 +158,35 @@ const Dashboard = () => {
                     </StyledPaper>
                 </Grid>
 
+                {/* Charts */}
+                <Grid item xs={12} md={6} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
+                    <StyledPaper>
+                        <StockUsageChart />
+                    </StyledPaper>
+                </Grid>
+                <Grid item xs={12} md={6} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
+                    <StyledPaper>
+                        <RestockPredictionChart />
+                    </StyledPaper>
+                </Grid>
+                <Grid item xs={12} md={6} onClick={() => handleGridClick('/performance')} style={{ cursor: 'pointer' }}>
+                    <StyledPaper>
+                        <FoodWasteChart />
+                    </StyledPaper>
+                </Grid>
+                <Grid item xs={12} md={6} onClick={() => handleGridClick('/performance')} style={{ cursor: 'pointer' }}>
+                    <StyledPaper>
+                        <BusinessHourChart />
+                    </StyledPaper>
+                </Grid>
+
                 {/* Inventory Table */}
-                <Grid item xs={12}>
+                <Grid item xs={12} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
                     <StyledPaper>
                         <InventoryTable />
                     </StyledPaper>
                 </Grid>
 
-                {/* Charts */}
-                <Grid item xs={12} md={6}>
-                    <StyledPaper>
-                        <StockUsageChart />
-                    </StyledPaper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <StyledPaper>
-                        <RestockPredictionChart />
-                    </StyledPaper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <StyledPaper>
-                        <FoodWasteChart />
-                    </StyledPaper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <StyledPaper>
-                        <BusinessHourChart />
-                    </StyledPaper>
-                </Grid>
             </Grid>
         </DashboardContainer>
     );
