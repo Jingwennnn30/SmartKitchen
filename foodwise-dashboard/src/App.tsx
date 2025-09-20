@@ -14,6 +14,7 @@ import InventoryPage from './components/Inventory/InventoryPage';
 import PreDiningPreparation from './components/PreDining/PreDiningPreparation';
 import OrderManagement from './components/OrderManagement/OrderManagement';
 import PerformanceTrends from './components/Performance/PerformanceTrends';
+import DonationPage from './components/Donation/DonationPage';
 import Sidebar from './components/Dashboard/Sidebar';
 import Header from './components/shared/Header';
 import { Box } from '@mui/material';
@@ -59,6 +60,7 @@ const router = createBrowserRouter(
       <Route path="/" element={<Dashboard />} />
       <Route path="/inventory" element={<InventoryPage />} />
       <Route path="/near-expired-items" element={<NearExpiredItems />} />
+      <Route path="/donation" element={<DonationPage />} />
       <Route path="/pre-dining" element={<PreDiningPreparation />} />
       <Route path="/order-management" element={<OrderManagement />} />
       <Route path="/performance" element={<PerformanceTrends />} />

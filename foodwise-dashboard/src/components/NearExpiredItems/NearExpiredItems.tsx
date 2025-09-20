@@ -17,6 +17,7 @@ import {
     Pagination
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 import ActionAnalysis from './ActionAnalysis';
 import DynamicMenu from './DynamicMenu';
 import DiscountSection from './DiscountSection';
@@ -56,6 +57,7 @@ const csrReportData = [
 ];
 
 const NearExpiredItems: React.FC = () => {
+    const navigate = useNavigate();
     const [nearExpiredItems, setNearExpiredItems] = useState<NearExpiredItem[]>([]);
     const [scanDate, setScanDate] = useState<string>('');
     const [loading, setLoading] = useState(true);
@@ -71,6 +73,7 @@ const NearExpiredItems: React.FC = () => {
             try {
                 setLoading(true);
                 setError(null);
+                
                 const data = await NearExpiredService.getNearExpiredItems();
                 setNearExpiredItems(data.items);
                 setScanDate(data.scanDate);
@@ -143,9 +146,25 @@ const NearExpiredItems: React.FC = () => {
     };
 
     const handleProceed = () => {
-        const selectedItems = Object.keys(checkedItems).filter(key => checkedItems[key]);
-        if (selectedItems.length > 0) {
-            alert(`Proceeding with donation for: ${selectedItems.join(', ')}`);
+        const selectedItemNames = Object.keys(checkedItems).filter(key => checkedItems[key]);
+        if (selectedItemNames.length > 0) {
+            // Create selected items data with details
+            const selectedItemsData = selectedItemNames.map(itemName => {
+                const item = nearExpiredItems.find(item => item.item_name === itemName);
+                return {
+                    item_name: itemName,
+                    quantity: item?.quantity || '',
+                    expiry_date: item?.expiry_date || '',
+                    unit: item?.unit || ''
+                };
+            });
+
+            // Navigate to donation page with selected items
+            navigate('/donation', { 
+                state: { 
+                    selectedItems: selectedItemsData 
+                } 
+            });
         } else {
             alert('Please select at least one item for donation.');
         }
