@@ -114,6 +114,21 @@ const OrderManagement: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                     Order Management
                 </Typography>
+                <Tooltip title={isListening ? "Stop Voice Assistant" : "Start Voice Assistant"}>
+                    <IconButton 
+                        onClick={handleVoiceAssistant}
+                        sx={{
+                            backgroundColor: isListening ? '#4caf50' : 'primary.main',
+                            color: 'white',
+                            '&:hover': {
+                                backgroundColor: isListening ? '#388e3c' : 'primary.dark',
+                            },
+                            boxShadow: 3,
+                        }}
+                    >
+                        {isListening ? <MicIcon /> : <MicOffIcon />}
+                    </IconButton>
+                </Tooltip>
             </Box>
 
             {/* KPI Section */}
@@ -322,23 +337,6 @@ const OrderManagement: React.FC = () => {
             </Box>
 
             {/* Voice Assistant Button */}
-            <Box sx={{ position: 'fixed', bottom: 32, right: 32, zIndex: 1000 }}>
-                <IconButton 
-                    onClick={handleVoiceAssistant}
-                    sx={{
-                        backgroundColor: isListening ? '#4caf50' : 'primary.main',
-                        color: 'white',
-                        width: 56,
-                        height: 56,
-                        '&:hover': {
-                            backgroundColor: isListening ? '#388e3c' : 'primary.dark',
-                        },
-                        boxShadow: 3,
-                    }}
-                >
-                    {isListening ? <MicIcon /> : <MicOffIcon />}
-                </IconButton>
-            </Box>
             <VoiceAssistant isActive={isListening} />
         </Box>
     );

@@ -11,6 +11,8 @@ import BusinessHourChart from './BusinessHourChart';
 import RestockPredictionChart from './RestockPredictionChart';
 import LowStock from './LowStock';
 import FreezerMonitoring from './FreezerMonitoring';
+import KommunicateChat from '../shared/KommunicateChat';
+import VoiceAlerts from '../shared/VoiceAssistant';
 
 // Styled components
 const DashboardContainer = styled(Box)({
@@ -38,10 +40,12 @@ const Dashboard = () => {
     };
     return (
         <DashboardContainer>
-            <Box sx={{ mb: 4 }}>
+            <KommunicateChat />
+            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                     Dashboard
                 </Typography>
+                <VoiceAlerts />
             </Box>
             <Grid container spacing={3}>
                 {/* KPI Cards */}
@@ -186,7 +190,6 @@ const Dashboard = () => {
                         <InventoryTable />
                     </StyledPaper>
                 </Grid>
-
             </Grid>
         </DashboardContainer>
     );
