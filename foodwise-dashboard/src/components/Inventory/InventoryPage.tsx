@@ -94,13 +94,6 @@ const InventoryPage = () => {
 
             {/* Predicted Restock Order */}
             <StyledPaper sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">Predicted Restock Order</Typography>
-                    <Box>
-                        <Button variant="outlined" sx={{ mr: 1 }}>Edit</Button>
-                        <Button variant="contained">Order</Button>
-                    </Box>
-                </Box>
                 <PredictedRestockTable />
             </StyledPaper>
 

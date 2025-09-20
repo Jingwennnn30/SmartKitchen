@@ -71,13 +71,7 @@ const FreezerMonitoring: React.FC = () => {
     }
 
     return (
-        <Card sx={{
-            height: '400px',
-            p: 2,
-            boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-            borderRadius: '10px',
-            overflow: 'auto'
-        }}>
+        <Box sx={{ p: 1 }}>
             <Typography variant="h6" gutterBottom>
                 Freezer Monitoring
             </Typography>
@@ -113,7 +107,7 @@ const FreezerMonitoring: React.FC = () => {
                     </ListItem>
                 ))}
             </List>
-        </Card>
+        </Box>
     );
 };
 

@@ -9,8 +9,12 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Typography
+    Typography,
+    Button,
+    TextField,
+    Chip
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 
 interface Item {
     id: number;
@@ -62,39 +66,103 @@ const getUrgencyColor = (urgency: Item['urgency']) => {
 };
 
 const PredictedRestockTable: React.FC = () => {
+    const [quantities, setQuantities] = React.useState<{ [key: number]: number }>({});
+
+
     return (
         <Box>
-            <Typography variant="h6" gutterBottom>
-                Predicted Restock Order
-            </Typography>
-            <TableContainer component={Paper}>
-                <Table size="small">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Predicted Restock
+                </Typography>
+                <Button
+                    variant="contained"
+                    color="primary" 
+                    startIcon={<AddIcon />}
+                    sx={{ ml: 'auto' }}
+                >
+                    Submit Order
+                </Button>
+            </Box>
+            <TableContainer 
+                component={Paper}
+                sx={{
+                    borderRadius: 2,
+                    '& .MuiTableCell-root': {
+                        py: 2,
+                        px: 2
+                    }
+                }}
+            >
+                <Table sx={{ minWidth: 700, '& th, & td': { whiteSpace: 'nowrap' } }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Item</TableCell>
-                            <TableCell align="right">Current Stock</TableCell>
-                            <TableCell align="right">Suggested Order</TableCell>
-                            <TableCell align="right">Order Date</TableCell>
-                            <TableCell align="right">Urgency</TableCell>
+                            <TableCell sx={{ width: 180 }}>Item</TableCell>
+                            <TableCell sx={{ width: 130 }}>Current Stock</TableCell>
+                            <TableCell sx={{ width: 150 }}>Suggested Quantity</TableCell>
+                            <TableCell sx={{ width: 150 }}>Order Date</TableCell>
+                            <TableCell sx={{ width: 110 }}>Urgency</TableCell>
+                            <TableCell sx={{ width: 220 }}>Order Quantity</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {mockData.map((row) => (
-                            <TableRow key={row.id}>
-                                <TableCell component="th" scope="row">
-                                    {row.name}
+                            <TableRow 
+                                key={row.id}
+                                sx={{ 
+                                    borderLeft: 3,
+                                    borderLeftColor: getUrgencyColor(row.urgency),
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                    }
+                                }}
+                            >
+                                <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
+                                <TableCell>{row.currentStock}</TableCell>
+                                <TableCell>
+                                    <Typography>{row.suggestedOrder}</Typography>
                                 </TableCell>
-                                <TableCell align="right">{row.currentStock}</TableCell>
-                                <TableCell align="right">{row.suggestedOrder}</TableCell>
-                                <TableCell align="right">{row.orderDate}</TableCell>
-                                <TableCell 
-                                    align="right"
-                                    sx={{ 
-                                        color: getUrgencyColor(row.urgency),
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    {row.urgency.toUpperCase()}
+                                <TableCell>{row.orderDate}</TableCell>
+                                <TableCell>
+                                    <Chip
+                                        label={row.urgency.toUpperCase()}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: `${getUrgencyColor(row.urgency)}15`,
+                                            color: getUrgencyColor(row.urgency),
+                                            fontWeight: 'medium',
+                                            fontSize: '0.75rem'
+                                        }}
+                                    />
+                                </TableCell>
+                                <TableCell align="right">
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <TextField
+                                            size="small"
+                                            type="number"
+                                            value={quantities[row.id] || ''}
+                                            onChange={(e) => setQuantities(prev => ({
+                                                ...prev,
+                                                [row.id]: Number(e.target.value)
+                                            }))}
+                                            sx={{ width: '80px' }}
+                                            InputProps={{
+                                                inputProps: { min: 0 }
+                                            }}
+                                        />
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            onClick={() => setQuantities(prev => ({
+                                                ...prev,
+                                                [row.id]: row.suggestedOrder
+                                            }))}
+                                            sx={{ whiteSpace: 'nowrap' }}
+                                        >
+                                            Use Suggested
+                                        </Button>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ))}
