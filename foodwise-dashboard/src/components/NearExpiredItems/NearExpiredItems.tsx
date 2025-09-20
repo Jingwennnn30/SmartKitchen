@@ -23,7 +23,6 @@ import DynamicMenu from './DynamicMenu';
 import DiscountSection from './DiscountSection';
 import CSRReport from './CSRReport';
 import { NearExpiredService, NearExpiredItem } from '../../services/nearExpiredService';
-import DonationSection from './DonationSection';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -198,9 +197,32 @@ const NearExpiredItems: React.FC = () => {
 
     return (
         <Box sx={{ padding: 3 }}>
-            <Typography variant="h5" gutterBottom fontWeight="bold">
-                Near Expired Items - Donation Friendly
-            </Typography>
+            {/* Header with title and donation portal button */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" gutterBottom fontWeight="bold">
+                    Near Expired Items - Donation Friendly
+                </Typography>
+                <Button
+                    variant="outlined"
+                    onClick={() => navigate('/donation')}
+                    sx={{
+                        borderColor: '#4caf50',
+                        color: '#4caf50',
+                        fontWeight: 'bold',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        '&:hover': {
+                            borderColor: '#388e3c',
+                            backgroundColor: 'rgba(76, 175, 80, 0.04)',
+                            transform: 'translateX(4px)',
+                        },
+                        transition: 'all 0.3s ease'
+                    }}
+                    endIcon={<span>→</span>}
+                >
+                    Donation Management Portal
+                </Button>
+            </Box>
             
             {scanDate && (
                 <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
