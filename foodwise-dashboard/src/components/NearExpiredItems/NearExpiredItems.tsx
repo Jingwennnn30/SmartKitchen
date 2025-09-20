@@ -65,19 +65,6 @@ const actionAnalysisData = [
     { name: 'Pre-dining Preparation', value: 20, color: '#9575CD' }
 ];
 
-const dynamicMenuItems = [
-    {
-        name: 'Chicken & Broccoli Pasta',
-        ingredients: ['chicken', 'broccoli', 'pasta'],
-        suggestedPrice: 15.9
-    },
-    {
-        name: 'Chicken Broccoli Pizza',
-        ingredients: ['chicken', 'broccoli', 'white sauce'],
-        suggestedPrice: 15.9
-    }
-];
-
 const discountItems = [
     {
         name: 'Potato',
@@ -174,7 +161,7 @@ const NearExpiredItems: React.FC = () => {
             {/* Dynamic Menu and Discount Sections */}
             <Grid container spacing={3} sx={{ mt: 1 }}>
                 <Grid item xs={12} md={6}>
-                    <DynamicMenu items={dynamicMenuItems} />
+                    <DynamicMenu />
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <DiscountSection items={discountItems} />
