@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography, Box, Grid } from '@mui/material';
+import { Card, Typography, Box, Grid, Button } from '@mui/material';
 
 interface StockItem {
     name: string;
@@ -14,6 +14,11 @@ const data: StockItem[] = [
 ];
 
 const LowStock: React.FC = () => {
+    const handleOrder = (itemName: string) => {
+        // TODO: Implement order functionality
+        console.log(`Ordering more ${itemName}`);
+    };
+
     return (
         <Grid container spacing={2}>
             {data.map((item, index) => (
@@ -34,6 +39,19 @@ const LowStock: React.FC = () => {
                             <Typography variant="caption" color="text.secondary">
                                 {item.note}
                             </Typography>
+                            <Button 
+                                variant="contained" 
+                                color="error" 
+                                size="small"
+                                onClick={() => handleOrder(item.name)}
+                                sx={{ 
+                                    mt: 1,
+                                    fontSize: '0.75rem',
+                                    width: 'fit-content'
+                                }}
+                            >
+                                Order Now
+                            </Button>
                         </Box>
                     </Card>
                 </Grid>
