@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     Box,
     Typography,
     Paper,
     Grid,
-    IconButton,
     styled,
-    keyframes,
     Chip,
+    IconButton,
+    Tooltip,
 } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
+import MicOffIcon from '@mui/icons-material/MicOff';
+import VoiceAssistant from './VoiceAssistant';
 
 interface KitchenUnit {
     id: string;
@@ -78,22 +80,6 @@ const kitchenUnits: KitchenUnit[] = [
     },
 ];
 
-// Keyframes for the mic button animation
-const pulseAnimation = keyframes`
-  0% {
-    transform: scale(1);
-    background-color: #e0e0e0;
-  }
-  50% {
-    transform: scale(1.05);
-    background-color: #4caf50;
-  }
-  100% {
-    transform: scale(1);
-    background-color: #e0e0e0;
-  }
-`;
-
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
     borderRadius: '10px',
@@ -115,31 +101,11 @@ const KitchenSlot = styled(Box)<{ status: string }>(({ status, theme }) => ({
     transition: 'all 0.3s ease'
 }));
 
-const VoiceAssistantButton = styled(IconButton)<{ active: boolean }>(({ active }) => ({
-    width: '60px',
-    height: '60px',
-    animation: active ? `${pulseAnimation} 2s infinite` : 'none',
-    backgroundColor: active ? '#4caf50' : '#e0e0e0',
-    '&:hover': {
-        backgroundColor: active ? '#45a049' : '#d5d5d5',
-    },
-    '& .MuiSvgIcon-root': {
-        color: active ? '#fff' : '#666',
-    }
-}));
-
 const OrderManagement: React.FC = () => {
-    const [isVoiceActive, setIsVoiceActive] = useState(false);
+    const [isListening, setIsListening] = useState(false);
 
     const handleVoiceAssistant = () => {
-        setIsVoiceActive(!isVoiceActive);
-        // Here you would typically connect to your voice API
-        // For now we'll just toggle the animation
-        setTimeout(() => {
-            if (!isVoiceActive) {
-                setIsVoiceActive(false);
-            }
-        }, 10000); // Reset after 10 seconds if activated
+        setIsListening(!isListening);
     };
 
     return (
@@ -148,12 +114,6 @@ const OrderManagement: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                     Order Management
                 </Typography>
-                <VoiceAssistantButton
-                    onClick={handleVoiceAssistant}
-                    active={isVoiceActive}
-                >
-                    <MicIcon />
-                </VoiceAssistantButton>
             </Box>
 
             {/* KPI Section */}
@@ -360,6 +320,26 @@ const OrderManagement: React.FC = () => {
                     </Box>
                 </StyledPaper>
             </Box>
+
+            {/* Voice Assistant Button */}
+            <Box sx={{ position: 'fixed', bottom: 32, right: 32, zIndex: 1000 }}>
+                <IconButton 
+                    onClick={handleVoiceAssistant}
+                    sx={{
+                        backgroundColor: isListening ? '#4caf50' : 'primary.main',
+                        color: 'white',
+                        width: 56,
+                        height: 56,
+                        '&:hover': {
+                            backgroundColor: isListening ? '#388e3c' : 'primary.dark',
+                        },
+                        boxShadow: 3,
+                    }}
+                >
+                    {isListening ? <MicIcon /> : <MicOffIcon />}
+                </IconButton>
+            </Box>
+            <VoiceAssistant isActive={isListening} />
         </Box>
     );
 };

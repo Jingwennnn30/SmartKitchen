@@ -1,7 +1,13 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { 
+  createBrowserRouter, 
+  RouterProvider, 
+  Route, 
+  createRoutesFromElements,
+  Outlet
+} from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import NearExpiredItems from './components/NearExpiredItems/NearExpiredItems';
 import InventoryPage from './components/Inventory/InventoryPage';
@@ -40,27 +46,31 @@ const AppLayout = () => {
             overflow: 'auto'
           }}
         >
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/near-expired-items" element={<NearExpiredItems />} />
-            <Route path="/pre-dining" element={<PreDiningPreparation />} />
-            <Route path="/order-management" element={<OrderManagement />} />
-            <Route path="/performance" element={<PerformanceTrends />} />
-          </Routes>
+          <Outlet />
         </Box>
       </Box>
     </Box>
   );
 };
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<AppLayout />}>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/inventory" element={<InventoryPage />} />
+      <Route path="/near-expired-items" element={<NearExpiredItems />} />
+      <Route path="/pre-dining" element={<PreDiningPreparation />} />
+      <Route path="/order-management" element={<OrderManagement />} />
+      <Route path="/performance" element={<PerformanceTrends />} />
+    </Route>
+  )
+);
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
-        <AppLayout />
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </ThemeProvider>
   );
 }

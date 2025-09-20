@@ -61,16 +61,8 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 
 // Render app with error boundary
-try {
-  root.render(
-    <React.StrictMode>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <App />
-      </ThemeProvider>
-    </React.StrictMode>
-  );
-} catch (error) {
-  console.error('Failed to render application:', error);
-  // You might want to render an error fallback UI here
-}
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

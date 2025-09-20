@@ -143,6 +143,8 @@ const NearExpiredItems: React.FC = () => {
                                     <TableCell>
                                         <FormControl size="small" sx={{ minWidth: 120 }}>
                                             <ActionSelect
+                                                id={`action-select-${item.item}`}
+                                                name={`action-${item.item}`}
                                                 value={selectedActions[item.item] || ""}
                                                 onChange={(e) => handleActionChange(e as SelectChangeEvent<string>, item)}
                                                 displayEmpty
