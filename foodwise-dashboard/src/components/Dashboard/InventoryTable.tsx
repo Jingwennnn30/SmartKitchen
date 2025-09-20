@@ -8,7 +8,8 @@ import {
     TableRow,
     Paper,
     Chip,
-    ChipProps
+    ChipProps,
+    Typography
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
@@ -60,6 +61,9 @@ const data: InventoryItem[] = [
 const InventoryTable: React.FC = () => {
     return (
         <Paper elevation={0}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+                Current Stock
+            </Typography>
             <StyledTableContainer>
                 <Table>
                     <TableHead>
