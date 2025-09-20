@@ -34,40 +34,99 @@ const Dashboard = () => {
             </Box>
             <Grid container spacing={3}>
                 {/* KPI Cards */}
-                <Grid item xs={12} sm={6} md={3}>
-                    <KPICard 
-                        title="Total Stock Value" 
-                        value="RM 12,948"
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <KPICard 
-                        title="Expiring Soon" 
-                        value="15 items"
-                        subtitle="within 3 days"
-                        valueColor="#FF0000"
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <KPICard 
-                        title="Average Waiting Time" 
-                        value="25 mins"
-                        valueColor="#FFD700"
-                        trend="up"
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <KPICard 
-                        title="Waste This Week" 
-                        value="2.3 kg"
-                        valueColor="#4CAF50"
-                        trend="down"
-                    />
-                </Grid>
+                {[
+                    {
+                        title: "Total Stock Value",
+                        value: "RM 12,948",
+                        icon: "💰",
+                        valueColor: "#1976d2",
+                        bg: "#e3f2fd"
+                    },
+                    {
+                        title: "Expiring Soon",
+                        value: "15 items",
+                        subtitle: "within 3 days",
+                        icon: "⏰",
+                        valueColor: "#d32f2f",
+                        bg: "#ffebee"
+                    },
+                    {
+                        title: "Average Waiting Time",
+                        value: "25 mins",
+                        icon: "⏳",
+                        valueColor: "#fbc02d",
+                        bg: "#fffde7",
+                        trend: "up"
+                    },
+                    {
+                        title: "Waste This Week",
+                        value: "2.3 kg",
+                        icon: "♻️",
+                        valueColor: "#388e3c",
+                        bg: "#e8f5e9",
+                        trend: "down"
+                    }
+                ].map((kpi, idx) => (
+                    <Grid item xs={12} sm={6} md={3} key={kpi.title}>
+                        <Paper
+                            elevation={3}
+                            sx={{
+                                p: 2,
+                                borderRadius: 3,
+                                background: kpi.bg,
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                minHeight: 120,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.07)'
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    fontSize: 40,
+                                    color: kpi.valueColor,
+                                    mr: 2,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: 48
+                                }}
+                            >
+                                {kpi.icon}
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                    {kpi.title}
+                                </Typography>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        fontWeight: 700,
+                                        color: kpi.valueColor,
+                                        mb: kpi.subtitle ? 0.5 : 0
+                                    }}
+                                >
+                                    {kpi.value}
+                                    {kpi.trend === "up" && (
+                                        <Box component="span" sx={{ color: "#fbc02d", ml: 1, fontSize: 20 }}>▲</Box>
+                                    )}
+                                    {kpi.trend === "down" && (
+                                        <Box component="span" sx={{ color: "#388e3c", ml: 1, fontSize: 20 }}>▼</Box>
+                                    )}
+                                </Typography>
+                                {kpi.subtitle && (
+                                    <Typography variant="caption" color="text.secondary">
+                                        {kpi.subtitle}
+                                    </Typography>
+                                )}
+                            </Box>
+                        </Paper>
+                    </Grid>
+                ))}
 
                 {/* Low Stock Alerts and Freezer Monitoring */}
                 <Grid item xs={12} md={6}>
-                    <StyledPaper sx={{ height: '400px', overflow: 'auto' }}>
+                    <StyledPaper sx={{ height: '320px', overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
                             Low Stock Alerts
                         </Typography>
@@ -76,7 +135,9 @@ const Dashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FreezerMonitoring />
+                    <StyledPaper sx={{ height: '320px', overflow: 'auto' }}>
+                        <FreezerMonitoring />
+                    </StyledPaper>
                 </Grid>
 
                 {/* Inventory Table */}
