@@ -65,19 +65,6 @@ const actionAnalysisData = [
     { name: 'Pre-dining Preparation', value: 20, color: '#9575CD' }
 ];
 
-const discountItems = [
-    {
-        name: 'Potato',
-        suggestedDiscount: 'Suggested Discount: BFF1 Fries',
-        time: 'Whole Day'
-    },
-    {
-        name: 'Potato',
-        suggestedDiscount: 'Apply 30% for potato dish',
-        time: 'Whole Day'
-    }
-];
-
 const csrReportData = [
     { method: 'Donation', amount: '5kg', savedVia: 'Donation' },
     { method: 'Dynamic Menu', amount: '59kg', savedVia: 'Dynamic Menu' },
@@ -164,7 +151,7 @@ const NearExpiredItems: React.FC = () => {
                     <DynamicMenu />
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <DiscountSection items={discountItems} />
+                    <DiscountSection />
                 </Grid>
             </Grid>
 
