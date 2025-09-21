@@ -22,9 +22,9 @@ const KommunicateChat: React.FC = () => {
                 }
 
                 const kommunicateSettings = {
-                    appId: "23b0f11a1c3125ebdbd874810e66f6ae",
+                    appId: "1ec35be68b280072a0d03a5e94e36ad89",
                     popupWidget: true,
-                    automaticChatOpenOnNavigation: false // Prevent auto-opening
+                    automaticChatOpenOnNavigation: true
                 };
 
                 window.kommunicate = window.kommunicate || {};
