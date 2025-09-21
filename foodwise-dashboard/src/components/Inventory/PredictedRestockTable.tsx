@@ -121,7 +121,7 @@ const PredictedRestockTable: React.FC = () => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                <Typography variant="h6">
                     Predicted Restock
                 </Typography>
             </Box>
@@ -153,7 +153,7 @@ const PredictedRestockTable: React.FC = () => {
                                         <Skeleton width={180} height={35} />
                                     </TableCell>
                                     <TableCell>
-                                        <Skeleton width={180} height={35} />
+                                        <Skeleton width={140} height={35} />
                                     </TableCell>
                                 </TableRow>
                             ))
