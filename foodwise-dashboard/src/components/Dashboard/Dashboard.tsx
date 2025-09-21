@@ -12,7 +12,7 @@ import RestockPredictionChart from './RestockPredictionChart';
 import LowStock from './LowStock';
 import FreezerMonitoring from './FreezerMonitoring';
 import KommunicateChat from '../shared/KommunicateChat';
-import VoiceAlerts from '../shared/VoiceAssistant';
+import DashboardVoiceAlerts from './DashboardVoiceAlerts';
 
 // Styled components
 const DashboardContainer = styled(Box)({
@@ -45,7 +45,7 @@ const Dashboard = () => {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                     Dashboard
                 </Typography>
-                <VoiceAlerts />
+                <DashboardVoiceAlerts />
             </Box>
             <Grid container spacing={3}>
                 {/* KPI Cards */}
@@ -147,7 +147,7 @@ const Dashboard = () => {
                 ))}
 
                 {/* Low Stock Alerts and Freezer Monitoring */}
-                <Grid item xs={12} md={6} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
+                <Grid item xs={12} md={6}>
                     <StyledPaper sx={{ height: '300px', overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
                             Low Stock Alerts

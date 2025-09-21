@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
     Box,
     Typography,
@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
-import VoiceAssistant from './VoiceAssistant';
+import OrderVoiceAssistant from './OrderVoiceAssistant';
 
 interface KitchenUnit {
     id: string;
@@ -105,6 +105,7 @@ const OrderManagement: React.FC = () => {
     const [isListening, setIsListening] = useState(false);
 
     const handleVoiceAssistant = () => {
+        console.log("Order Management Voice Button Clicked! Current state:", isListening, "→ New state:", !isListening);
         setIsListening(!isListening);
     };
 
@@ -337,7 +338,7 @@ const OrderManagement: React.FC = () => {
             </Box>
 
             {/* Voice Assistant Button */}
-            <VoiceAssistant isActive={isListening} />
+            <OrderVoiceAssistant isActive={isListening} />
         </Box>
     );
 };
