@@ -8,15 +8,26 @@ Deployment : https://main.d7pk79y2e1xma.amplifyapp.com/
 Presentation Slide : https://docs.google.com/presentation/d/1F7oNun8VsE6GxObxqAWnjyGL_0GXZhjt/edit?usp=sharing&ouid=105210094624135042073&rtpof=true&sd=true
 
 
+### **AWS Services Used**
+- **AWS Amplify**: Build and deploy the application with GitHub integration
+- **AWS Lambda**: Serverless compute for business logic
+- **Amazon DynamoDB**: NoSQL database for inventory, menu, and sales data
+- **Amazon Lex**: Conversational AI for voice assistant
+- **Amazon Bedrock**: AI/ML model integration for menu and discount generation
+- **API Gateway**: RESTful API endpoints
+- **AWS Amplify**: Frontend hosting and deployment
+- **Amazon S3**: Static asset storage
+
+  
 ## 🌟 Features
 
-### 📊 **Dashboard & Analytics**
+### **Dashboard & Analytics**
 - Real-time KPI monitoring (Stock Value, Expiring Items, Wait Times, Food Waste)
 - Interactive charts and visualizations using Recharts and Nivo
 - Low stock alerts with automated reorder suggestions
 - Freezer temperature monitoring with alerts
 
-### 🥘 **Inventory Management**
+### **Inventory Management**
 - Current inventory tracking with search functionality
 - Stock level visualization with color-coded indicators
 - Predicted restock recommendations with AI-powered suggestions
@@ -24,7 +35,7 @@ Presentation Slide : https://docs.google.com/presentation/d/1F7oNun8VsE6GxObxqAW
 - **Predictive Analytics**: ML-powered demand forecasting and restock predictions
 
 
-### 🤖 **Food Expiry Handling**
+### **Food Expiry Handling**
 - **Dynamic Menu Generation**: Integrate with Amazon Bedrock, Gen-AI creates menu suggestions based on available ingredients
 - **Discount Promotions**: Intelligent discount suggestions for near-expired items
 - **Donation Management**:
@@ -33,13 +44,13 @@ Presentation Slide : https://docs.google.com/presentation/d/1F7oNun8VsE6GxObxqAW
 - Impact reporting and analytics
 
 
-### 🎯 **Order Management**
+### **Order Management**
 - Voice-activated ordering system with Amazon Lex integration
 - Real-time order tracking and kitchen assignment
 - Chef workload distribution
 - Automated order processing
 
-### 📈 **Performance Analytics**
+### **Performance Analytics**
 - Food waste tracking and reduction metrics
 - Business hour performance analysis
 - Seasonal trend analysis
@@ -73,16 +84,6 @@ lambda-functions/
 └── voice-assistant/             # Lex integration
 ```
 
-### **AWS Services Used**
-- **AWS Amplify**: Build and deploy the application with GitHub integration
-- **AWS Lambda**: Serverless compute for business logic
-- **Amazon DynamoDB**: NoSQL database for inventory, menu, and sales data
-- **Amazon Lex**: Conversational AI for voice assistant
-- **Amazon Bedrock**: AI/ML model integration for menu and discount generation
-- **API Gateway**: RESTful API endpoints
-- **AWS Amplify**: Frontend hosting and deployment
-- **Amazon S3**: Static asset storage
-
 
 ## 📊 API Endpoints
 
@@ -96,7 +97,7 @@ lambda-functions/
 
 
 
-## 🔒 Security
+## Security
 
 - **CORS Configuration**: Properly configured for cross-origin requests
 - **Input Validation**: All API inputs are validated and sanitized
@@ -104,7 +105,7 @@ lambda-functions/
 - **AWS IAM**: Least privilege access principles
 
 
-## 📋 Project Structure
+## Project Structure
 
 ```
 SmartKitchen/
