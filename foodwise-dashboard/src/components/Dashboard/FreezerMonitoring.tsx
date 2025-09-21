@@ -55,15 +55,15 @@ const FreezerMonitoring: React.FC = () => {
         return (
             <Card sx={{
                 height: '100%',
-                p: 2,
+                p: 1.5,
                 boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-                borderRadius: '10px'
+                borderRadius: '8px'
             }}>
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
                     Freezer Monitoring
                 </Typography>
-                <Alert severity="success">
-                    <AlertTitle>All Systems Normal</AlertTitle>
+                <Alert severity="success" sx={{ py: 0.5 }}>
+                    <AlertTitle sx={{ mb: 0.5 }}>All Systems Normal</AlertTitle>
                     All freezers are operating within normal parameters
                 </Alert>
             </Card>
@@ -72,31 +72,31 @@ const FreezerMonitoring: React.FC = () => {
 
     return (
         <Box sx={{ p: 1 }}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
                 Freezer Monitoring
             </Typography>
-            <List>
+            <List sx={{ p: 0 }}>
                 {alertFreezers.map((freezer) => (
-                    <ListItem key={freezer.id} sx={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                    <ListItem key={freezer.id} sx={{ flexDirection: 'column', alignItems: 'stretch', p: 0, mb: 1 }}>
                         <Alert 
                             severity="warning"
-                            sx={{ mb: 1, width: '100%' }}
+                            sx={{ py: 1, width: '100%' }}
                         >
                             <AlertTitle>{freezer.name}</AlertTitle>
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                 {isTemperatureAlert(freezer) && (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        <DeviceThermostatIcon color="error" />
-                                        <Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <DeviceThermostatIcon color="error" sx={{ fontSize: '1.2rem' }} />
+                                        <Typography variant="body2">
                                             Temperature: {freezer.temperature}°C
                                             (Normal: {freezer.normalTempRange.min}°C to {freezer.normalTempRange.max}°C)
                                         </Typography>
                                     </Box>
                                 )}
                                 {isHumidityAlert(freezer) && (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        <WaterDropIcon color="error" />
-                                        <Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <WaterDropIcon color="error" sx={{ fontSize: '1.2rem' }} />
+                                        <Typography variant="body2">
                                             Humidity: {freezer.humidity}%
                                             (Normal: {freezer.normalHumidityRange.min}% to {freezer.normalHumidityRange.max}%)
                                         </Typography>
