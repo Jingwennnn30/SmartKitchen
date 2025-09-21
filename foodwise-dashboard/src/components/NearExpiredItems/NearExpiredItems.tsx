@@ -23,7 +23,6 @@ import DynamicMenu from './DynamicMenu';
 import DiscountSection from './DiscountSection';
 import CSRReport from './CSRReport';
 import { NearExpiredService, NearExpiredItem } from '../../services/nearExpiredService';
-import DonationSection from './DonationSection';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
