@@ -103,20 +103,20 @@ const PredictedRestockTable: React.FC = () => {
                     borderRadius: 2,
                     '& .MuiTableCell-root': {
                         py: 2,
-                        px: 2
+                        px: 3
                     }
                 }}
             >
-                <Table sx={{ minWidth: 700, '& th, & td': { whiteSpace: 'nowrap' } }}>
+                <Table sx={{ minWidth: 1200, tableLayout: 'fixed', '& th, & td': { whiteSpace: 'nowrap' } }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ width: 180 }}>Item</TableCell>
-                            <TableCell sx={{ width: 130 }}>Current Stock</TableCell>
-                            <TableCell sx={{ width: 150 }}>Suggested Quantity</TableCell>
-                            <TableCell sx={{ width: 150 }}>Order Date</TableCell>
-                            <TableCell sx={{ width: 110 }}>Urgency</TableCell>
-                            <TableCell sx={{ width: 220 }}>Order Quantity</TableCell>
-                            <TableCell sx={{ width: 120 }} align="center">Action</TableCell>
+                            <TableCell sx={{ width: '12%', fontWeight: 600 }}>Item</TableCell>
+                            <TableCell sx={{ width: '10%', fontWeight: 600 }} align="center">Current Stock</TableCell>
+                            <TableCell sx={{ width: '12%', fontWeight: 600 }} align="center">Suggested Quantity</TableCell>
+                            <TableCell sx={{ width: '12%', fontWeight: 600 }} align="center">Order Date</TableCell>
+                            <TableCell sx={{ width: '10%', fontWeight: 600 }} align="center">Urgency</TableCell>
+                            <TableCell sx={{ width: '28%', fontWeight: 600 }} align="center">Order Quantity</TableCell>
+                            <TableCell sx={{ width: '16%', fontWeight: 600 }} align="center">Action</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -132,12 +132,12 @@ const PredictedRestockTable: React.FC = () => {
                                 }}
                             >
                                 <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
-                                <TableCell>{row.currentStock}</TableCell>
-                                <TableCell>
+                                <TableCell align="center">{row.currentStock}</TableCell>
+                                <TableCell align="center">
                                     <Typography>{row.suggestedOrder}</Typography>
                                 </TableCell>
-                                <TableCell>{row.orderDate}</TableCell>
-                                <TableCell>
+                                <TableCell align="center">{row.orderDate}</TableCell>
+                                <TableCell align="center">
                                     <Chip
                                         label={row.urgency.toUpperCase()}
                                         size="small"
@@ -145,12 +145,13 @@ const PredictedRestockTable: React.FC = () => {
                                             bgcolor: `${getUrgencyColor(row.urgency)}15`,
                                             color: getUrgencyColor(row.urgency),
                                             fontWeight: 'medium',
-                                            fontSize: '0.75rem'
+                                            fontSize: '0.75rem',
+                                            minWidth: '70px'
                                         }}
                                     />
                                 </TableCell>
-                                <TableCell align="right">
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <TableCell align="center">
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                                         <TextField
                                             size="small"
                                             type="number"
