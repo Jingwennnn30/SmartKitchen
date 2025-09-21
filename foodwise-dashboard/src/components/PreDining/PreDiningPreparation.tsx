@@ -16,6 +16,8 @@ import {
     Select,
     MenuItem,
     FormControl,
+    Skeleton,
+    CircularProgress,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
@@ -103,12 +105,13 @@ const PreDiningPreparation: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [items, setItems] = useState<PreparationItem[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
                 const forecast: ForecastResponse = await getForecastData();
-                console.log("Forecast data:", forecast);
                 const mappedItems: PreparationItem[] = forecast.top_dishes.map((dish) => ({
                     menu: dish.dishName,
                     ingredients: dish.ingredients,
@@ -119,6 +122,8 @@ const PreDiningPreparation: React.FC = () => {
                 setItems(mappedItems);
             } catch (err) {
                 console.error("Error fetching forecast:", err);
+            } finally {
+                setLoading(false);
             }
         };
         fetchData();
@@ -194,58 +199,79 @@ const PreDiningPreparation: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredData.map((item, index) => (
-                                <TableRow key={index}>
-                                    <TableCell>{item.menu}</TableCell>
-                                    <TableCell>{item.quantity}</TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                            {item.ingredients.map((ingredient, i) => (
-                                                <Chip
-                                                    key={i}
-                                                    label={ingredient}
-                                                    size="small"
-                                                    variant="outlined"
-                                                />
-                                            ))}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>{item.prepTime}</TableCell>
-                                    <TableCell align="center">
-                                        {editingIndex === index ? (
-                                            <FormControl size="small" sx={{ minWidth: 120 }}>
-                                                <StyledSelect
-                                                    value={item.action || 'not-started'}
-                                                    onChange={(e) => handleActionChange(index, e.target.value as PreparationItem['action'])}
-                                                    onBlur={() => setEditingIndex(null)}
-                                                    displayEmpty
-                                                    autoFocus
-                                                >
-                                                    <MenuItem value="not-started">Not Started</MenuItem>
-                                                    <MenuItem value="preparing">Preparing</MenuItem>
-                                                    <MenuItem value="completed">Completed</MenuItem>
-                                                </StyledSelect>
-                                            </FormControl>
-                                        ) : (
-                                            <Box onClick={() => setEditingIndex(index)} sx={{ cursor: 'pointer' }}>
-                                                <ActionChip 
-                                                    actionType={item.action || 'not-started'}
-                                                    label={getActionLabel(item.action) || 'Not Started'}
-                                                    size="small"
-                                                />
+                            {loading ? (
+                                // Skeleton rows
+                                Array.from(new Array(5)).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton variant="text" width={120} /></TableCell>
+                                        <TableCell><Skeleton variant="text" width={40} /></TableCell>
+                                        <TableCell><Skeleton variant="rectangular" width={180} height={24} /></TableCell>
+                                        <TableCell><Skeleton variant="text" width={100} /></TableCell>
+                                        <TableCell align="center"><Skeleton variant="rounded" width={80} height={24} /></TableCell>
+                                        <TableCell align="center"><Skeleton variant="circular" width={24} height={24} /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                filteredData.map((item, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{item.menu}</TableCell>
+                                        <TableCell>{item.quantity}</TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                                {item.ingredients.map((ingredient, i) => (
+                                                    <Chip
+                                                        key={i}
+                                                        label={ingredient}
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                ))}
                                             </Box>
-                                        )}
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <IconButton size="small">
-                                            {getStatusIcon(item.action)}
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                        </TableCell>
+                                        <TableCell>{item.prepTime}</TableCell>
+                                        <TableCell align="center">
+                                            {editingIndex === index ? (
+                                                <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                    <StyledSelect
+                                                        value={item.action || 'not-started'}
+                                                        onChange={(e) => handleActionChange(index, e.target.value as PreparationItem['action'])}
+                                                        onBlur={() => setEditingIndex(null)}
+                                                        displayEmpty
+                                                        autoFocus
+                                                    >
+                                                        <MenuItem value="not-started">Not Started</MenuItem>
+                                                        <MenuItem value="preparing">Preparing</MenuItem>
+                                                        <MenuItem value="completed">Completed</MenuItem>
+                                                    </StyledSelect>
+                                                </FormControl>
+                                            ) : (
+                                                <Box onClick={() => setEditingIndex(index)} sx={{ cursor: 'pointer' }}>
+                                                    <ActionChip 
+                                                        actionType={item.action || 'not-started'}
+                                                        label={getActionLabel(item.action) || 'Not Started'}
+                                                        size="small"
+                                                    />
+                                                </Box>
+                                            )}
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <IconButton size="small">
+                                                {getStatusIcon(item.action)}
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
+
+                {/* Centered spinner on first load (optional) */}
+                {loading && items.length === 0 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                        <CircularProgress />
+                    </Box>
+                )}
             </StyledPaper>
         </Box>
     );
