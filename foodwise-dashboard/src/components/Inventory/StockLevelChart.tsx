@@ -1,5 +1,6 @@
 import React from 'react';
 import type { FC } from 'react';
+import { Box, Link, Typography } from '@mui/material';
 import {
     BarChart,
     Bar,
@@ -35,25 +36,56 @@ const StockLevelChart: React.FC<StockLevelChartProps> = ({ category }) => {
     const filteredData = category === 'All' ? data : data.filter(item => item.name === category);
 
     return (
-        <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={filteredData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar 
-                    dataKey="current" 
-                    name="Current Stock" 
-                    fill="#82ca9d" 
-                />
-                <Bar 
-                    dataKey="minimum" 
-                    name="Safe Minimum" 
-                    fill="#ffc658" 
-                />
-            </BarChart>
-        </ResponsiveContainer>
+        <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+            <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={filteredData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar 
+                        dataKey="current" 
+                        name="Current Stock" 
+                        fill="#82ca9d" 
+                    />
+                    <Bar 
+                        dataKey="minimum" 
+                        name="Safe Minimum" 
+                        fill="#ffc658" 
+                    />
+                </BarChart>
+            </ResponsiveContainer>
+            
+            {/* Show All Link */}
+            <Box sx={{ 
+                position: 'absolute', 
+                bottom: 0, 
+                right: 0, 
+                padding: 1 
+            }}>
+                <Link 
+                    href="#" 
+                    underline="always" 
+                    color="primary" 
+                    sx={{ 
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        '&:hover': {
+                            color: 'primary.dark'
+                        }
+                    }}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        // Handle Show All functionality here
+                        console.log('Show All clicked');
+                    }}
+                >
+                    Show All
+                </Link>
+            </Box>
+        </Box>
     );
 };
 
