@@ -27,6 +27,9 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
     marginTop: theme.spacing(3),
     background: 'linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%)',
+    minHeight: '400px', // Ensure consistent height with DynamicMenu
+    display: 'flex',
+    flexDirection: 'column',
 }));
 
 const DiscountCard = styled(Paper)(({ theme }) => ({
@@ -169,10 +172,30 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ items: propItems }) =
                 </Alert>
             )}
             
-            <Box>
-                {discountItems.map((item, index) => (
-                    <Fade in={true} timeout={300 + index * 100} key={index}>
-                        <DiscountCard>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {discountItems.length === 0 ? (
+                    <Box sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        color: 'text.secondary',
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
+                    }}>
+                        <LocalOfferIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                        <Typography variant="body1" gutterBottom>
+                            No discount offers generated yet
+                        </Typography>
+                        <Typography variant="body2">
+                            Select items from the table above and click "Generate Discounts" to create AI-powered promotional offers
+                        </Typography>
+                    </Box>
+                ) : (
+                    <Box sx={{ flex: 1 }}>
+                        {discountItems.map((item, index) => (
+                        <Fade in={true} timeout={300 + index * 100} key={index}>
+                            <DiscountCard>
                             {/* Discount Badge */}
                             <DiscountBadge>
                                 <FlashOnIcon sx={{ fontSize: '1rem' }} />
@@ -226,7 +249,9 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ items: propItems }) =
                             </Box>
                         </DiscountCard>
                     </Fade>
-                ))}
+                        ))}
+                    </Box>
+                )}
             </Box>
         </StyledPaper>
     );

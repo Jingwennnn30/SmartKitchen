@@ -12,7 +12,12 @@ import {
     Typography,
     Button,
     TextField,
-    Chip
+    Chip,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    CircularProgress
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 
@@ -67,26 +72,60 @@ const getUrgencyColor = (urgency: Item['urgency']) => {
 
 const PredictedRestockTable: React.FC = () => {
     const [quantities, setQuantities] = React.useState<{ [key: number]: number }>({});
+    const [openDialog, setOpenDialog] = React.useState(false);
+    const [selectedItem, setSelectedItem] = React.useState<Item | null>(null);
+    const [orderAmount, setOrderAmount] = React.useState<string>('');
+    const [loading, setLoading] = React.useState(false);
+
+    const API_URL = "https://k5j3bc2p73.execute-api.us-east-1.amazonaws.com/dev/order";
 
     const handleSubmitOrder = (item: Item) => {
-        const orderQuantity = quantities[item.id] || item.suggestedOrder;
+        console.log(`Opening order dialog for ${item.name}`);
+        setSelectedItem(item);
+        const currentQuantity = quantities[item.id] || item.suggestedOrder;
+        setOrderAmount(String(currentQuantity));
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setSelectedItem(null);
+        setOrderAmount('');
+        setLoading(false);
+    };
+
+    const placeOrder = async () => {
+        if (!selectedItem) return;
         
-        // Log the order details (you can replace this with actual API call)
-        console.log('Submitting order:', {
-            itemId: item.id,
-            itemName: item.name,
-            quantity: orderQuantity,
-            urgency: item.urgency
-        });
-        
-        // Show confirmation (you can replace this with a proper notification)
-        alert(`Order submitted for ${item.name}: ${orderQuantity} units`);
-        
-        // Optionally clear the quantity after submission
-        setQuantities(prev => ({
-            ...prev,
-            [item.id]: 0
-        }));
+        setLoading(true);
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    item: selectedItem.name, 
+                    amount: Number(orderAmount)
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Request failed");
+            
+            alert(data.message || `Order placed: ${orderAmount} units of ${selectedItem.name}`);
+            
+            // Clear the quantity after successful submission
+            setQuantities(prev => ({
+                ...prev,
+                [selectedItem.id]: 0
+            }));
+            
+            handleCloseDialog();
+        } catch (err) {
+            console.error(err);
+            alert("Error: " + (err as Error).message);
+        } finally {
+            setLoading(false);
+        }
     };
 
 
@@ -200,6 +239,63 @@ const PredictedRestockTable: React.FC = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Order Confirmation Dialog */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    Place Order for {selectedItem?.name}
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            Current Stock: {selectedItem?.currentStock} units
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            Suggested Quantity: {selectedItem?.suggestedOrder} units
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            Order Date: {selectedItem?.orderDate}
+                        </Typography>
+                        <TextField
+                            label="Order Amount (units)"
+                            type="number"
+                            value={orderAmount}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                // Allow empty string and valid numbers
+                                if (value === '' || /^\d+$/.test(value)) {
+                                    setOrderAmount(value);
+                                }
+                            }}
+                            onFocus={(e) => {
+                                // Select all text when focused for easy replacement
+                                e.target.select();
+                            }}
+                            inputProps={{ 
+                                min: 1,
+                                step: 1
+                            }}
+                            fullWidth
+                            required
+                            helperText="Suggested amount based on usage patterns and current stock level"
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog} disabled={loading}>
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={placeOrder} 
+                        variant="contained" 
+                        color="primary"
+                        disabled={loading || orderAmount === '' || Number(orderAmount) < 1}
+                        startIcon={loading ? <CircularProgress size={20} /> : null}
+                    >
+                        {loading ? "Placing Order..." : "Confirm Order"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
