@@ -68,22 +68,34 @@ const getUrgencyColor = (urgency: Item['urgency']) => {
 const PredictedRestockTable: React.FC = () => {
     const [quantities, setQuantities] = React.useState<{ [key: number]: number }>({});
 
+    const handleSubmitOrder = (item: Item) => {
+        const orderQuantity = quantities[item.id] || item.suggestedOrder;
+        
+        // Log the order details (you can replace this with actual API call)
+        console.log('Submitting order:', {
+            itemId: item.id,
+            itemName: item.name,
+            quantity: orderQuantity,
+            urgency: item.urgency
+        });
+        
+        // Show confirmation (you can replace this with a proper notification)
+        alert(`Order submitted for ${item.name}: ${orderQuantity} units`);
+        
+        // Optionally clear the quantity after submission
+        setQuantities(prev => ({
+            ...prev,
+            [item.id]: 0
+        }));
+    };
+
 
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Predicted Restock
                 </Typography>
-                <Button
-                    variant="contained"
-                    color="primary" 
-                    startIcon={<AddIcon />}
-                    sx={{ ml: 'auto' }}
-                >
-                    Submit Order
-                </Button>
             </Box>
             <TableContainer 
                 component={Paper}
@@ -104,6 +116,7 @@ const PredictedRestockTable: React.FC = () => {
                             <TableCell sx={{ width: 150 }}>Order Date</TableCell>
                             <TableCell sx={{ width: 110 }}>Urgency</TableCell>
                             <TableCell sx={{ width: 220 }}>Order Quantity</TableCell>
+                            <TableCell sx={{ width: 120 }} align="center">Action</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -163,6 +176,23 @@ const PredictedRestockTable: React.FC = () => {
                                             Use Suggested
                                         </Button>
                                     </Box>
+                                </TableCell>
+                                <TableCell align="center">
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => handleSubmitOrder(row)}
+                                        sx={{ 
+                                            whiteSpace: 'nowrap',
+                                            backgroundColor: '#1976d2',
+                                            '&:hover': {
+                                                backgroundColor: '#1565c0'
+                                            }
+                                        }}
+                                    >
+                                        Submit Order
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
