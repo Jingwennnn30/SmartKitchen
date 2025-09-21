@@ -23,6 +23,7 @@ import DynamicMenu from './DynamicMenu';
 import DiscountSection from './DiscountSection';
 import CSRReport from './CSRReport';
 import { NearExpiredService, NearExpiredItem } from '../../services/nearExpiredService';
+import { DynamicMenuService, DynamicMenuItem } from '../../services/dynamicMenuService';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -39,6 +40,18 @@ const ProceedButton = styled(Button)(({ theme }) => ({
     '&:hover': {
         backgroundColor: '#45a049',
     },
+}));
+
+const DynamicMenuButton = styled(Button)(({ theme }) => ({
+    backgroundColor: '#2196f3',
+    color: 'white',
+    fontWeight: 'bold',
+    padding: '12px 24px',
+    borderRadius: '8px',
+    '&:hover': {
+        backgroundColor: '#1976d2',
+    },
+    marginRight: '12px',
 }));
 
 // Mock data for components
@@ -62,6 +75,15 @@ const NearExpiredItems: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({});
+    
+    // New state for Dynamic Menu and Discount checkboxes
+    const [dynamicMenuItems, setDynamicMenuItems] = useState<{ [key: string]: boolean }>({});
+    const [discountItems, setDiscountItems] = useState<{ [key: string]: boolean }>({});
+    
+    // State for generated dynamic menu
+    const [generatedMenu, setGeneratedMenu] = useState<DynamicMenuItem[]>([]);
+    const [menuLoading, setMenuLoading] = useState(false);
+    const [menuError, setMenuError] = useState<string | null>(null);
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -142,6 +164,56 @@ const NearExpiredItems: React.FC = () => {
             ...prev,
             [itemName]: !prev[itemName]
         }));
+    };
+
+    // New handlers for Dynamic Menu and Discount checkboxes
+    const handleDynamicMenuChange = (itemName: string) => {
+        setDynamicMenuItems(prev => ({
+            ...prev,
+            [itemName]: !prev[itemName]
+        }));
+    };
+
+    const handleDiscountChange = (itemName: string) => {
+        setDiscountItems(prev => ({
+            ...prev,
+            [itemName]: !prev[itemName]
+        }));
+    };
+
+    const handleGenerateDynamicMenu = async () => {
+        const selectedMenuItems = Object.keys(dynamicMenuItems).filter(key => dynamicMenuItems[key]);
+        
+        if (selectedMenuItems.length === 0) {
+            alert('Please select at least one item for Dynamic Menu generation.');
+            return;
+        }
+
+        try {
+            setMenuLoading(true);
+            setMenuError(null);
+            
+            console.log('🚀 Frontend: Generating dynamic menu for items:', selectedMenuItems);
+            console.log('🚀 Frontend: Selected items type:', typeof selectedMenuItems);
+            console.log('🚀 Frontend: Selected items length:', selectedMenuItems.length);
+            console.log('🚀 Frontend: JSON payload that will be sent:', JSON.stringify({ selectedItems: selectedMenuItems }));
+            
+            // Call the lambda function via DynamicMenuService
+            const response = await DynamicMenuService.generateDynamicMenu(selectedMenuItems);
+            
+            // Update state with generated menu
+            setGeneratedMenu(response.menu);
+            
+            // Show success message
+            alert(`Dynamic Menu generated successfully! Created ${response.totalDishes} dishes using: ${selectedMenuItems.join(', ')}`);
+            
+        } catch (error) {
+            console.error('Error generating dynamic menu:', error);
+            setMenuError(error instanceof Error ? error.message : 'Failed to generate dynamic menu');
+            alert('Failed to generate dynamic menu. Please try again.');
+        } finally {
+            setMenuLoading(false);
+        }
     };
 
     const handleProceed = () => {
@@ -247,6 +319,8 @@ const NearExpiredItems: React.FC = () => {
                                 <TableCell>Quantity</TableCell>
                                 <TableCell>Expiry Date</TableCell>
                                 <TableCell>Scan Date</TableCell>
+                                <TableCell>Dynamic Menu</TableCell>
+                                <TableCell>Discount</TableCell>
                                 <TableCell>Donation</TableCell>
                             </TableRow>
                         </TableHead>
@@ -257,6 +331,20 @@ const NearExpiredItems: React.FC = () => {
                                     <TableCell>{item.quantity}</TableCell>
                                     <TableCell>{NearExpiredService.formatExpiryDate(item.expiry_date)}</TableCell>
                                     <TableCell>{NearExpiredService.formatScanDate(scanDate)}</TableCell>
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={dynamicMenuItems[item.item_name] || false}
+                                            onChange={() => handleDynamicMenuChange(item.item_name)}
+                                            color="primary"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={discountItems[item.item_name] || false}
+                                            onChange={() => handleDiscountChange(item.item_name)}
+                                            color="primary"
+                                        />
+                                    </TableCell>
                                     <TableCell>
                                         <Checkbox
                                             checked={checkedItems[item.item_name] || false}
@@ -285,8 +373,16 @@ const NearExpiredItems: React.FC = () => {
                     </Box>
                 )}
                 
-                {/* Proceed Button */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                {/* Action Buttons */}
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                    <DynamicMenuButton 
+                        onClick={handleGenerateDynamicMenu}
+                        variant="contained"
+                        disabled={menuLoading}
+                        startIcon={menuLoading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                        {menuLoading ? 'Generating Menu...' : 'Generate Dynamic Menu'}
+                    </DynamicMenuButton>
                     <ProceedButton 
                         onClick={handleProceed}
                         variant="contained"
@@ -309,7 +405,12 @@ const NearExpiredItems: React.FC = () => {
             {/* Dynamic Menu and Discount Sections */}
             <Grid container spacing={3} sx={{ mt: 1 }}>
                 <Grid item xs={12} md={6}>
-                    <DynamicMenu />
+                    <DynamicMenu items={generatedMenu.length > 0 ? generatedMenu : undefined} />
+                    {menuError && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {menuError}
+                        </Alert>
+                    )}
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <DiscountSection />

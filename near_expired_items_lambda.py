@@ -25,7 +25,7 @@ def lambda_handler(event, context):
         
         # Get current date and cutoff dates for donation window
         today = datetime.today().date()
-        start_donation_window = today + timedelta(days=14)  # Start from 14 days later
+        start_donation_window = today + timedelta(days=2)  # Start from 14 days later
         end_donation_window = today + timedelta(days=44)    # Up to 44 days (14+30 days donation window)
         
         # Scan the stock table
