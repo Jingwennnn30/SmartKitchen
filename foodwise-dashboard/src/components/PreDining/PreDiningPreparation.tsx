@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -22,45 +22,15 @@ import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { ForecastResponse, getForecastData } from '../../services/prediningPreparationService';
 
 interface PreparationItem {
-    menu: string;
-    ingredients: string[];
-    prepTime: string;
-    quantity: number;
-    action?: 'completed' | 'preparing' | 'not-started' | null;
+  menu: string;
+  ingredients: string[];
+  prepTime: string;
+  quantity: number;
+  action?: 'completed' | 'preparing' | 'not-started' | null;
 }
-
-const mockData: PreparationItem[] = [
-    {
-        menu: "Beef Burger",
-        ingredients: ["Beef Patty", "Lettuce", "Tomato", "Onions", "Cheese"],
-        prepTime: "Before 11:30 AM",
-        quantity: 25,
-        action: 'not-started'
-    },
-    {
-        menu: "Grilled Chicken Salad",
-        ingredients: ["Chicken Breast", "Mixed Greens", "Cherry Tomatoes", "Balsamic"],
-        prepTime: "Before 11:45 AM",
-        quantity: 15,
-        action: 'not-started'
-    },
-    {
-        menu: "Fish & Chips",
-        ingredients: ["Cod Fillet", "Potatoes", "Tartar Sauce"],
-        prepTime: "Before 12:00 PM",
-        quantity: 20,
-        action: 'not-started'
-    },
-    {
-        menu: "Pasta Carbonara",
-        ingredients: ["Spaghetti", "Bacon", "Eggs", "Parmesan"],
-        prepTime: "Before 12:15 PM",
-        quantity: 18,
-        action: 'not-started'
-    },
-];
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -68,7 +38,7 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
     boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)'
 }));
 
-const ActionChip = styled(Chip)<{ actionType: string }>(({ theme, actionType }) => ({
+const ActionChip = styled(Chip)<{ actionType: string }>(({ actionType }) => ({
     fontSize: '11px',
     fontWeight: 'bold',
     height: '20px',
@@ -91,7 +61,7 @@ const ActionChip = styled(Chip)<{ actionType: string }>(({ theme, actionType }) 
         '#e0e0e0',
 }));
 
-const StyledSelect = styled(Select)(({ theme }) => ({
+const StyledSelect = styled(Select)(() => ({
     '& .MuiOutlinedInput-root': {
         backgroundColor: '#ffffff',
         borderRadius: '6px',
@@ -124,7 +94,6 @@ const getActionLabel = (action: PreparationItem['action']) => {
         case 'preparing':
             return 'Preparing';
         case 'not-started':
-            return 'Not Started';
         default:
             return 'Not Started';
     }
@@ -132,8 +101,28 @@ const getActionLabel = (action: PreparationItem['action']) => {
 
 const PreDiningPreparation: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [items, setItems] = useState<PreparationItem[]>(mockData);
+    const [items, setItems] = useState<PreparationItem[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const forecast: ForecastResponse = await getForecastData();
+                console.log("Forecast data:", forecast);
+                const mappedItems: PreparationItem[] = forecast.top_dishes.map((dish) => ({
+                    menu: dish.dishName,
+                    ingredients: dish.ingredients,
+                    prepTime: "Before Lunch Peak",
+                    quantity: dish.forecast_sales,
+                    action: 'not-started'
+                }));
+                setItems(mappedItems);
+            } catch (err) {
+                console.error("Error fetching forecast:", err);
+            }
+        };
+        fetchData();
+    }, []);
 
     const handleActionChange = (filteredIndex: number, action: PreparationItem['action']) => {
         const filteredData = items.filter(item =>
@@ -147,7 +136,7 @@ const PreDiningPreparation: React.FC = () => {
         const updatedItems = [...items];
         updatedItems[actualIndex].action = action;
         setItems(updatedItems);
-        setEditingIndex(null); // Close dropdown after selection
+        setEditingIndex(null);
     };
 
     const filteredData = items.filter(item =>
