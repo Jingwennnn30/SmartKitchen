@@ -16,6 +16,7 @@ export interface RestockPredictionResponse {
 
 export async function fetchRestockPrediction(): Promise<RestockPredictionResponse> {
   try {
+    console.log("Fetching restock prediction data from ", API_URL);
     const response = await fetch(API_URL, {
       method: "GET",
     });
