@@ -114,32 +114,18 @@ const DynamicMenu: React.FC<DynamicMenuProps> = ({ items: propItems }) => {
                 setLoading(true);
                 setError(null);
                 
-                // Use prop items if provided, otherwise fetch from API
+                // Use prop items if provided
                 if (propItems && propItems.length > 0) {
                     setMenuItems(propItems);
                 } else {
-                    const data = await MenuService.getDynamicMenu();
-                    setMenuItems(data);
+                    // Don't fetch from API if no items are provided
+                    // Just show default state or empty state
+                    setMenuItems([]);
                 }
             } catch (err) {
                 console.error('Error fetching menu data:', err);
                 setError('Failed to load dynamic menu. Please try again later.');
-                
-                // Fallback to mock data
-                setMenuItems([
-                    {
-                        name: "Chicken & Broccoli Pasta",
-                        price: "MYR 15.90",
-                        description: "Delicious pasta with chicken and broccoli",
-                        ingredients: "chicken, broccoli, pasta"
-                    },
-                    {
-                        name: "Chicken Broccoli Pizza",
-                        price: "MYR 15.90", 
-                        description: "Fresh pizza with chicken and broccoli",
-                        ingredients: "chicken, broccoli, white sauce"
-                    }
-                ]);
+                setMenuItems([]);
             } finally {
                 setLoading(false);
             }
@@ -195,72 +181,88 @@ const DynamicMenu: React.FC<DynamicMenuProps> = ({ items: propItems }) => {
             )}
             
             <Box>
-                {menuItems.map((item, index) => (
-                    <Fade in={true} timeout={300 + index * 100} key={index}>
-                        <MenuItemCard>
-                            {/* Main Content */}
-                            <Box>
-                                <Typography variant="h6" fontWeight="bold" color="primary" sx={{ mb: 1 }}>
-                                    {item.name}
-                                </Typography>
-                                
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
-                                    {item.description}
-                                </Typography>
-
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                    <LocalDiningIcon color="action" sx={{ fontSize: '1rem' }} />
-                                    <IngredientBox>
-                                        {MenuService.parseIngredients(item.ingredients || '').join(', ') || 'No ingredients listed'}
-                                    </IngredientBox>
-                                </Box>
-
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-                                    <PriceChip 
-                                        icon={<RestaurantMenuIcon />}
-                                        label={item.price}
-                                    />
+                {menuItems.length === 0 ? (
+                    <Box sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        color: 'text.secondary'
+                    }}>
+                        <MenuBookIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                        <Typography variant="body1" gutterBottom>
+                            No dynamic menu generated yet
+                        </Typography>
+                        <Typography variant="body2">
+                            Select items from the table above and click "Generate Dynamic Menu" to create AI-powered menu suggestions
+                        </Typography>
+                    </Box>
+                ) : (
+                    menuItems.map((item, index) => (
+                        <Fade in={true} timeout={300 + index * 100} key={index}>
+                            <MenuItemCard>
+                                {/* Main Content */}
+                                <Box>
+                                    <Typography variant="h6" fontWeight="bold" color="primary" sx={{ mb: 1 }}>
+                                        {item.name}
+                                    </Typography>
                                     
-                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                        <Tooltip title="Add this dish to active menu">
-                                            <Button 
-                                                variant="contained" 
-                                                size="small"
-                                                sx={{ 
-                                                    background: 'linear-gradient(45deg, #673ab7, #3f51b5)',
-                                                    '&:hover': {
-                                                        background: 'linear-gradient(45deg, #5e35b1, #303f9f)',
-                                                    }
-                                                }}
-                                            >
-                                                ADD TO MENU
-                                            </Button>
-                                        </Tooltip>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+                                        {item.description}
+                                    </Typography>
+
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                        <LocalDiningIcon color="action" sx={{ fontSize: '1rem' }} />
+                                        <IngredientBox>
+                                            {MenuService.parseIngredients(item.ingredients || '').join(', ') || 'No ingredients listed'}
+                                        </IngredientBox>
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                                        <PriceChip 
+                                            icon={<RestaurantMenuIcon />}
+                                            label={item.price}
+                                        />
                                         
-                                        <Tooltip title="View detailed recipe">
-                                            <Button 
-                                                variant="outlined" 
-                                                size="small"
-                                                onClick={() => handleViewRecipe(item)}
-                                                startIcon={<VisibilityIcon />}
-                                                sx={{
-                                                    borderColor: '#673ab7',
-                                                    color: '#673ab7',
-                                                    '&:hover': {
-                                                        borderColor: '#5e35b1',
-                                                        backgroundColor: '#f3e5f5',
-                                                    }
-                                                }}
-                                            >
-                                                VIEW RECIPE
-                                            </Button>
-                                        </Tooltip>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Tooltip title="Add this dish to active menu">
+                                                <Button 
+                                                    variant="contained" 
+                                                    size="small"
+                                                    sx={{ 
+                                                        background: 'linear-gradient(45deg, #673ab7, #3f51b5)',
+                                                        '&:hover': {
+                                                            background: 'linear-gradient(45deg, #5e35b1, #303f9f)',
+                                                        }
+                                                    }}
+                                                >
+                                                    ADD TO MENU
+                                                </Button>
+                                            </Tooltip>
+                                            
+                                            <Tooltip title="View detailed recipe">
+                                                <Button 
+                                                    variant="outlined" 
+                                                    size="small"
+                                                    onClick={() => handleViewRecipe(item)}
+                                                    startIcon={<VisibilityIcon />}
+                                                    sx={{
+                                                        borderColor: '#673ab7',
+                                                        color: '#673ab7',
+                                                        '&:hover': {
+                                                            borderColor: '#5e35b1',
+                                                            backgroundColor: '#f3e5f5',
+                                                        }
+                                                    }}
+                                                >
+                                                    VIEW RECIPE
+                                                </Button>
+                                            </Tooltip>
+                                        </Box>
                                     </Box>
                                 </Box>
-                            </Box>
-                        </MenuItemCard>
-                    </Fade>
-                ))}
+                            </MenuItemCard>
+                        </Fade>
+                    ))
+                )}
             </Box>
 
             <RecipeModal 
