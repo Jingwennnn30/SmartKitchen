@@ -2,6 +2,9 @@
 
 A comprehensive AWS serverless solution for intelligent restaurant inventory management, food waste reduction, and operational optimization.
 
+**Reference Link:**
+Deployment : https://main.d7pk79y2e1xma.amplifyapp.com/
+Presentation Slide : https://docs.google.com/presentation/d/1F7oNun8VsE6GxObxqAWnjyGL_0GXZhjt/edit?usp=sharing&ouid=105210094624135042073&rtpof=true&sd=true
 
 ## 🌟 Features
 
