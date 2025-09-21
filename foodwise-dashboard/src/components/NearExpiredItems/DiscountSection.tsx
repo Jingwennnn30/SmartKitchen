@@ -104,12 +104,12 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ items: propItems }) =
                 setLoading(true);
                 setError(null);
                 
-                // Use prop items if provided, otherwise fetch from API
+                // Use prop items if provided, otherwise show empty state
                 if (propItems && propItems.length > 0) {
                     setDiscountItems(propItems);
                 } else {
-                    const data = await DiscountService.getDiscounts();
-                    setDiscountItems(data);
+                    // Don't fetch without near-expired items
+                    setDiscountItems([]);
                 }
             } catch (err) {
                 console.error('Error fetching discount data:', err);

@@ -24,6 +24,7 @@ import DiscountSection from './DiscountSection';
 import CSRReport from './CSRReport';
 import { NearExpiredService, NearExpiredItem } from '../../services/nearExpiredService';
 import { DynamicMenuService, DynamicMenuItem } from '../../services/dynamicMenuService';
+import { DiscountService, DiscountItem } from '../../services/discountService';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -54,6 +55,18 @@ const DynamicMenuButton = styled(Button)(({ theme }) => ({
     marginRight: '12px',
 }));
 
+const SuggestedDiscountButton = styled(Button)(({ theme }) => ({
+    backgroundColor: '#ff9800',
+    color: 'white',
+    fontWeight: 'bold',
+    padding: '12px 24px',
+    borderRadius: '8px',
+    '&:hover': {
+        backgroundColor: '#f57c00',
+    },
+    marginRight: '12px',
+}));
+
 // Mock data for components
 const actionAnalysisData = [
     { name: 'Dynamic Menu', value: 30, color: '#4DD0E1' },
@@ -76,14 +89,18 @@ const NearExpiredItems: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({});
     
-    // New state for Dynamic Menu and Discount checkboxes
+    // New state for Dynamic Menu checkboxes
     const [dynamicMenuItems, setDynamicMenuItems] = useState<{ [key: string]: boolean }>({});
-    const [discountItems, setDiscountItems] = useState<{ [key: string]: boolean }>({});
     
     // State for generated dynamic menu
     const [generatedMenu, setGeneratedMenu] = useState<DynamicMenuItem[]>([]);
     const [menuLoading, setMenuLoading] = useState(false);
     const [menuError, setMenuError] = useState<string | null>(null);
+    
+    // State for suggested discounts
+    const [suggestedDiscounts, setSuggestedDiscounts] = useState<DiscountItem[]>([]);
+    const [discountLoading, setDiscountLoading] = useState(false);
+    const [discountError, setDiscountError] = useState<string | null>(null);
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -166,16 +183,9 @@ const NearExpiredItems: React.FC = () => {
         }));
     };
 
-    // New handlers for Dynamic Menu and Discount checkboxes
+    // New handlers for Dynamic Menu checkboxes
     const handleDynamicMenuChange = (itemName: string) => {
         setDynamicMenuItems(prev => ({
-            ...prev,
-            [itemName]: !prev[itemName]
-        }));
-    };
-
-    const handleDiscountChange = (itemName: string) => {
-        setDiscountItems(prev => ({
             ...prev,
             [itemName]: !prev[itemName]
         }));
@@ -213,6 +223,32 @@ const NearExpiredItems: React.FC = () => {
             alert('Failed to generate dynamic menu. Please try again.');
         } finally {
             setMenuLoading(false);
+        }
+    };
+
+    const handleViewSuggestedDiscount = async () => {
+        try {
+            setDiscountLoading(true);
+            setDiscountError(null);
+            
+            console.log('🚀 Frontend: Generating suggested discounts for all displayed items');
+            console.log('🚀 Frontend: Near expired items:', nearExpiredItems);
+            
+            // Send all displayed near-expired items to Lambda function
+            const response = await DiscountService.generateSuggestedDiscounts(nearExpiredItems);
+            
+            // Update state with suggested discounts
+            setSuggestedDiscounts(response);
+            
+            // Show success message
+            alert(`Generated ${response.length} AI-powered discount suggestions based on your near-expired items!`);
+            
+        } catch (error) {
+            console.error('Error generating suggested discounts:', error);
+            setDiscountError(error instanceof Error ? error.message : 'Failed to generate suggested discounts');
+            alert('Failed to generate suggested discounts. Please try again.');
+        } finally {
+            setDiscountLoading(false);
         }
     };
 
@@ -320,7 +356,6 @@ const NearExpiredItems: React.FC = () => {
                                 <TableCell>Expiry Date</TableCell>
                                 <TableCell>Scan Date</TableCell>
                                 <TableCell>Dynamic Menu</TableCell>
-                                <TableCell>Discount</TableCell>
                                 <TableCell>Donation</TableCell>
                             </TableRow>
                         </TableHead>
@@ -335,13 +370,6 @@ const NearExpiredItems: React.FC = () => {
                                         <Checkbox
                                             checked={dynamicMenuItems[item.item_name] || false}
                                             onChange={() => handleDynamicMenuChange(item.item_name)}
-                                            color="primary"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Checkbox
-                                            checked={discountItems[item.item_name] || false}
-                                            onChange={() => handleDiscountChange(item.item_name)}
                                             color="primary"
                                         />
                                     </TableCell>
@@ -383,6 +411,14 @@ const NearExpiredItems: React.FC = () => {
                     >
                         {menuLoading ? 'Generating Menu...' : 'Generate Dynamic Menu'}
                     </DynamicMenuButton>
+                    <SuggestedDiscountButton 
+                        onClick={handleViewSuggestedDiscount}
+                        variant="contained"
+                        disabled={discountLoading}
+                        startIcon={discountLoading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                        {discountLoading ? 'Generating Discounts...' : 'View Suggested Discount'}
+                    </SuggestedDiscountButton>
                     <ProceedButton 
                         onClick={handleProceed}
                         variant="contained"
@@ -413,7 +449,12 @@ const NearExpiredItems: React.FC = () => {
                     )}
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <DiscountSection />
+                    <DiscountSection items={suggestedDiscounts.length > 0 ? suggestedDiscounts : undefined} />
+                    {discountError && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {discountError}
+                        </Alert>
+                    )}
                 </Grid>
             </Grid>
         </Box>
