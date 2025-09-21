@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   Box, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, Typography, Button, TextField, Chip,
-  Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress
+  Skeleton, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { fetchRestockPrediction, RestockItem } from '../../services/restockPredictionService';
@@ -97,6 +98,7 @@ const PredictedRestockTable: React.FC = () => {
   useEffect(() => {
     async function loadData() {
       try {
+        setLoading(true);
         const data = await fetchRestockPrediction();
         const mapped: Item[] = data.restock.map((r: RestockItem, index: number) => ({
           id: index + 1,
@@ -109,6 +111,8 @@ const PredictedRestockTable: React.FC = () => {
         setRows(mapped);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     }
     loadData();
@@ -116,6 +120,7 @@ const PredictedRestockTable: React.FC = () => {
 
   return (
     <Box>
+      {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Predicted Restock
@@ -136,81 +141,77 @@ const PredictedRestockTable: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow
-                key={row.id}
-                sx={{
-                  borderLeft: 3,
-                  borderLeftColor: getUrgencyColor(row.urgency),
-                  '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
-                }}
-              >
-                <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
-                <TableCell align="center">{row.currentStock}</TableCell>
-                <TableCell align="center">{row.suggestedOrder}</TableCell>
-                <TableCell align="center">{row.orderDate}</TableCell>
-                <TableCell align="center">
-                  <Chip
-                    label={row.urgency.toUpperCase()}
-                    size="small"
-                    sx={{
-                      bgcolor: `${getUrgencyColor(row.urgency)}15`,
-                      color: getUrgencyColor(row.urgency),
-                      fontWeight: 'medium',
-                      fontSize: '0.75rem',
-                      minWidth: '70px'
-                    }}
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                    <TextField
+            {loading ? (
+              // Show 5 skeleton rows while loading
+              Array.from(new Array(5)).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton variant="text" width={120} /></TableCell>
+                  <TableCell><Skeleton variant="text" width={60} /></TableCell>
+                  <TableCell><Skeleton variant="text" width={80} /></TableCell>
+                  <TableCell><Skeleton variant="text" width={100} /></TableCell>
+                  <TableCell><Skeleton variant="rounded" width={60} height={24} /></TableCell>
+                  <TableCell><Skeleton variant="text" width={150} /></TableCell>
+                </TableRow>
+              ))
+            ) : (
+              rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  sx={{
+                    borderLeft: 3,
+                    borderLeftColor: getUrgencyColor(row.urgency),
+                    '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
+                  }}
+                >
+                  <TableCell sx={{ fontWeight: 500 }}>{row.name}</TableCell>
+                  <TableCell>{row.currentStock}</TableCell>
+                  <TableCell>{row.suggestedOrder}</TableCell>
+                  <TableCell>{row.orderDate}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={row.urgency.toUpperCase()}
                       size="small"
-                      type="number"
-                      value={quantities[row.id] || ''}
-                      onChange={(e) =>
-                        setQuantities((prev) => ({
-                          ...prev,
-                          [row.id]: Number(e.target.value)
-                        }))
-                      }
-                      sx={{ width: '80px' }}
-                      InputProps={{ inputProps: { min: 0 } }}
+                      sx={{
+                        bgcolor: `${getUrgencyColor(row.urgency)}15`,
+                        color: getUrgencyColor(row.urgency),
+                        fontWeight: 'medium',
+                        fontSize: '0.75rem'
+                      }}
                     />
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() =>
-                        setQuantities((prev) => ({
-                          ...prev,
-                          [row.id]: row.suggestedOrder
-                        }))
-                      }
-                      sx={{ whiteSpace: 'nowrap' }}
-                    >
-                      Use Suggested
-                    </Button>
-                  </Box>
-                </TableCell>
-                <TableCell align="center">
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleSubmitOrder(row)}
-                    sx={{ 
-                      whiteSpace: 'nowrap',
-                      backgroundColor: '#1976d2',
-                      '&:hover': {
-                        backgroundColor: '#1565c0'
-                      }
-                    }}
-                  >
-                    Submit Order
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell align="right">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={quantities[row.id] || ''}
+                        onChange={(e) =>
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [row.id]: Number(e.target.value)
+                          }))
+                        }
+                        sx={{ width: '80px' }}
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() =>
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [row.id]: row.suggestedOrder
+                          }))
+                        }
+                        sx={{ whiteSpace: 'nowrap' }}
+                      >
+                        Use Suggested
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -271,6 +272,13 @@ const PredictedRestockTable: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Optional centered spinner (good for first load) */}
+      {loading && rows.length === 0 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <CircularProgress />
+        </Box>
+      )}
     </Box>
   );
 };
