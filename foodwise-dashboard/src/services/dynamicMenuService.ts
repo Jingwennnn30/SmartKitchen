@@ -13,7 +13,7 @@ export interface DynamicMenuResponse {
 }
 
 export class DynamicMenuService {
-    private static readonly BASE_URL = 'https://ib7kg5hiy3.execute-api.us-east-1.amazonaws.com/dev'; // Your actual API Gateway URL
+    private static readonly BASE_URL = 'https://2im5g.execute-api.us-east-1.amazonaws.com/dev'; // Your actual API Gateway URL
     
     static async generateDynamicMenu(selectedItems: string[]): Promise<DynamicMenuResponse> {
         try {

@@ -1,5 +1,7 @@
-// API service for fetching dynamic menu data from AWS Lambda
-const API_BASE_URL = 'https://ib7kg5hiy3.execute-api.us-east-1.amazonaws.com/dev';
+// API service for fetching and saving dynamic menu data from AWS Lambda
+
+const API_BASE_URL = 'https://2m5g.execute-api.us-east-1.amazonaws.com/dev';
+const SAVE_MENU_API_URL = 'https://cfvreg.execute-api.us-east-1.amazonaws.com/dev/savemenu';
 
 export interface MenuItem {
     name: string;
@@ -13,11 +15,11 @@ export interface MenuResponse {
 }
 
 export class MenuService {
+    // ✅ Fetch dynamic menu items from the Lambda function
     static async getDynamicMenu(): Promise<MenuItem[]> {
         try {
             console.log('Fetching dynamic menu from:', `${API_BASE_URL}/menu_test`);
-            
-            // Simplified fetch to match the working test button
+
             const response = await fetch(`${API_BASE_URL}/menu_test`);
 
             console.log('Response status:', response.status);
@@ -33,35 +35,70 @@ export class MenuService {
             return data.menu;
         } catch (error) {
             console.error('Error fetching dynamic menu:', error);
-            
-            // Check if it's a network/CORS error
+
+            // Handle CORS-related fetch errors gracefully
             if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
                 console.error('This looks like a CORS error. Check your API Gateway CORS settings.');
                 throw new Error('CORS error: Unable to fetch data from API. Please check API Gateway CORS configuration.');
             }
-            
+
             throw error;
         }
     }
 
-    // Helper function to parse ingredients string into array and remove quantities
+    // ✅ Save a dynamic dish into DynamoDB via Lambda
+    static async saveDynamicDish(item: MenuItem): Promise<void> {
+        try {
+            const numericPrice = MenuService.extractPrice(item.price);
+
+            // ✅ Formula: cost = 50% of price
+            const cost = numericPrice * 0.5;
+
+            const response = await fetch(SAVE_MENU_API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: item.name,
+                    cost: cost.toFixed(2),             // store with 2 decimals
+                    price: numericPrice,               // numeric for backend
+                    price_display: item.price,         // e.g. "MYR 18"
+                    prep_time_min: 15,
+                    subcategory: "AI Suggestions"
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to save dish: ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log("✅ Dish saved successfully:", result);
+        } catch (error) {
+            console.error("❌ Error saving dynamic dish:", error);
+            throw error;
+        }
+    }
+
+
+    // ✅ Helper: Parse ingredients string into array and remove quantities
     static parseIngredients(ingredientsString: string): string[] {
-        // Check if ingredientsString is null, undefined, or not a string
         if (!ingredientsString || typeof ingredientsString !== 'string') {
             return [];
         }
-        
+
         return ingredientsString
             .split(',')
             .map(ingredient => {
-                // Remove quantities in parentheses like (100g), (2 slices), etc.
                 const cleaned = ingredient.trim().replace(/\s*\([^)]*\)/g, '');
                 return cleaned.trim();
             })
             .filter(ingredient => ingredient.length > 0);
     }
 
-    // Helper function to extract price number from price string
+    // ✅ Helper: Extract numeric value from price string (e.g., "MYR 18" → 18)
     static extractPrice(priceString: string): number {
         const match = priceString.match(/[\d.]+/);
         return match ? parseFloat(match[0]) : 0;
