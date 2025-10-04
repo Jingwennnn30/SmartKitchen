@@ -16,8 +16,8 @@ import RecipeModal from './RecipeModal';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LocalDiningIcon from '@mui/icons-material/LocalDining';
-import StarIcon from '@mui/icons-material/Star';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface DynamicMenuProps {
     items?: MenuItem[]; // Made optional since we'll fetch from API
@@ -68,21 +68,6 @@ const PriceChip = styled(Chip)(({ theme }) => ({
     }
 }));
 
-const NewBadge = styled(Box)(({ theme }) => ({
-    position: 'absolute',
-    top: '12px',
-    right: '12px',
-    backgroundColor: '#2196f3',
-    color: 'white',
-    padding: '4px 8px',
-    borderRadius: '12px',
-    fontSize: '0.75rem',
-    fontWeight: 'bold',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-}));
-
 const IngredientBox = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
@@ -95,18 +80,13 @@ const IngredientBox = styled(Box)(({ theme }) => ({
     fontWeight: 500,
 }));
 
-const ButtonGroup = styled(Box)({
-    display: 'flex',
-    gap: '8px',
-    marginTop: '12px'
-});
-
 const DynamicMenu: React.FC<DynamicMenuProps> = ({ items: propItems }) => {
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedRecipe, setSelectedRecipe] = useState<MenuItem | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [savingItem, setSavingItem] = useState<string | null>(null); // track saving state
 
     useEffect(() => {
         const fetchMenuData = async () => {
@@ -114,12 +94,9 @@ const DynamicMenu: React.FC<DynamicMenuProps> = ({ items: propItems }) => {
                 setLoading(true);
                 setError(null);
                 
-                // Use prop items if provided
                 if (propItems && propItems.length > 0) {
                     setMenuItems(propItems);
                 } else {
-                    // Don't fetch from API if no items are provided
-                    // Just show default state or empty state
                     setMenuItems([]);
                 }
             } catch (err) {
@@ -142,6 +119,19 @@ const DynamicMenu: React.FC<DynamicMenuProps> = ({ items: propItems }) => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRecipe(null);
+    };
+
+    const handleAddToMenu = async (item: MenuItem) => {
+        try {
+            setSavingItem(item.name);
+            await MenuService.saveDynamicDish(item);
+            setSavingItem(null);
+            alert(`${item.name} was saved to menu!`);
+        } catch (err) {
+            console.error('Error saving item:', err);
+            setSavingItem(null);
+            alert(`Failed to save ${item.name}. Check console for details.`);
+        }
     };
 
     if (loading) {
@@ -199,7 +189,6 @@ const DynamicMenu: React.FC<DynamicMenuProps> = ({ items: propItems }) => {
                     menuItems.map((item, index) => (
                         <Fade in={true} timeout={300 + index * 100} key={index}>
                             <MenuItemCard>
-                                {/* Main Content */}
                                 <Box>
                                     <Typography variant="h6" fontWeight="bold" color="primary" sx={{ mb: 1 }}>
                                         {item.name}
@@ -224,18 +213,26 @@ const DynamicMenu: React.FC<DynamicMenuProps> = ({ items: propItems }) => {
                                         
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <Tooltip title="Add this dish to active menu">
-                                                <Button 
-                                                    variant="contained" 
-                                                    size="small"
-                                                    sx={{ 
-                                                        background: 'linear-gradient(45deg, #673ab7, #3f51b5)',
-                                                        '&:hover': {
-                                                            background: 'linear-gradient(45deg, #5e35b1, #303f9f)',
-                                                        }
-                                                    }}
-                                                >
-                                                    ADD TO MENU
-                                                </Button>
+                                                <span>
+                                                    <Button 
+                                                        variant="contained" 
+                                                        size="small"
+                                                        disabled={savingItem === item.name}
+                                                        onClick={() => handleAddToMenu(item)}
+                                                        sx={{ 
+                                                            background: 'linear-gradient(45deg, #673ab7, #3f51b5)',
+                                                            '&:hover': {
+                                                                background: 'linear-gradient(45deg, #5e35b1, #303f9f)',
+                                                            }
+                                                        }}
+                                                    >
+                                                        {savingItem === item.name ? (
+                                                            <CircularProgress size={18} color="inherit" />
+                                                        ) : (
+                                                            'ADD TO MENU'
+                                                        )}
+                                                    </Button>
+                                                </span>
                                             </Tooltip>
                                             
                                             <Tooltip title="View detailed recipe">
