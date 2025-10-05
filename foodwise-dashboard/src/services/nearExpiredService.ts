@@ -1,5 +1,5 @@
 // API service for fetching near expired items from AWS Lambda
-const API_URL = 'https://tk9a9.execute-api.us-east-1.amazonaws.com/dev/expired';
+const API_URL = 'https://tka8n7d9a9.execute-api.us-east-1.amazonaws.com/dev/expired';
 
 export interface NearExpiredItem {
     item_id: number;
