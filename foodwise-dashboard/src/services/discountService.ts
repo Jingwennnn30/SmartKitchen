@@ -1,5 +1,5 @@
 // API service for fetching discount data from AWS Lambda
-const DISCOUNT_API_BASE_URL = 'https://wwgwbhhhf5.execute-api.us-east-1.amazonaws.com/dev';
+const DISCOUNT_API_BASE_URL = 'https://2ye2.execute-api.us-east-1.amazonaws.com/dev';
 
 export interface DiscountItem {
     dish: string;
