@@ -330,6 +330,13 @@ const PerformanceTrends: React.FC = () => {
         avg_table_size: apiSummary?.avg_table_size || 0 // Keep the original avg table size
     };
 
+    // Mock data for Inventory Usage Trends (for the chart)
+    const inventoryTrends = Array.from({ length: 14 }, (_, index) => ({
+        date: (index + 1) + '/9',
+        stock: Math.floor(Math.random() * 200 + 300),
+        usage: Math.floor(Math.random() * 150 + 200)
+    }));
+
     // Debug logging
     console.log('Selected dates:', selectedDates);
     console.log('All daily data:', allDailyData);
@@ -1125,16 +1132,93 @@ const PerformanceTrends: React.FC = () => {
                     </StyledPaper>
                 </Grid>
 
-                {/* Charts Section - Temporarily Disabled (Using Real Data Only) */}
+                {/* Stock vs Usage Chart */}
                 <Grid item xs={12}>
                     <StyledPaper>
-                        <Box sx={{ textAlign: 'center', py: 4 }}>
-                            <Typography variant="h6" gutterBottom sx={{ color: '#6b7280' }}>
-                                📊 Additional Analytics Coming Soon
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                                Advanced charts and analytics will be available once more data points are integrated
-                            </Typography>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 3 }}>
+                            📈 Stock vs Usage Trends
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
+                            Track inventory levels against daily usage patterns
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={400}>
+                            <LineChart data={inventoryTrends}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis 
+                                    dataKey="date" 
+                                    stroke="#6b7280"
+                                    fontSize={12}
+                                />
+                                <YAxis 
+                                    stroke="#6b7280"
+                                    fontSize={12}
+                                />
+                                <Tooltip 
+                                    contentStyle={{
+                                        backgroundColor: '#ffffff',
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                />
+                                <Legend />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="stock" 
+                                    stroke={blue[500]} 
+                                    strokeWidth={3}
+                                    name="Stock Level"
+                                    dot={{ fill: blue[500], strokeWidth: 2, r: 5 }}
+                                    activeDot={{ r: 7, stroke: blue[500], strokeWidth: 2 }}
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="usage" 
+                                    stroke={orange[500]} 
+                                    strokeWidth={3}
+                                    name="Usage"
+                                    dot={{ fill: orange[500], strokeWidth: 2, r: 5 }}
+                                    activeDot={{ r: 7, stroke: orange[500], strokeWidth: 2 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        
+                        {/* Chart Insights */}
+                        <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            mt: 3, 
+                            pt: 3, 
+                            borderTop: '1px solid #e5e7eb',
+                            gap: 2
+                        }}>
+                            <Box sx={{ textAlign: 'center', flex: 1 }}>
+                                <Typography variant="h6" sx={{ color: blue[600], fontWeight: 'bold' }}>
+                                    {Math.round(inventoryTrends.reduce((sum, item) => sum + item.stock, 0) / inventoryTrends.length)}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                    Avg Stock Level
+                                </Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', flex: 1 }}>
+                                <Typography variant="h6" sx={{ color: orange[600], fontWeight: 'bold' }}>
+                                    {Math.round(inventoryTrends.reduce((sum, item) => sum + item.usage, 0) / inventoryTrends.length)}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                    Avg Daily Usage
+                                </Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', flex: 1 }}>
+                                <Typography variant="h6" sx={{ 
+                                    color: inventoryTrends.some(item => item.stock < item.usage) ? red[600] : teal[600], 
+                                    fontWeight: 'bold' 
+                                }}>
+                                    {inventoryTrends.filter(item => item.stock < item.usage).length > 0 ? 'Alert' : 'Optimal'}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                    Stock Status
+                                </Typography>
+                            </Box>
                         </Box>
                     </StyledPaper>
                 </Grid>
