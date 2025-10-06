@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -24,6 +24,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    CircularProgress,
 } from '@mui/material';
 import {
     LineChart,
@@ -46,6 +47,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import { teal, orange, blue, red } from '@mui/material/colors';
+import { fetchPerformanceData, PerformanceResponse } from '../../services/performanceService';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -81,113 +83,74 @@ const MetricCard = styled(Card)(({ theme }) => ({
     }
 }));
 
-// Mock data for Historical Order Patterns (Heatmap data)
-type HeatmapDataPoint = {
-    hour: string;
-    orders: number;
-};
-
-type HeatmapRow = {
-    day: string;
-    [key: string]: string | number; // For dynamic hour keys
-};
-
-const generateHeatmapData = (): HeatmapRow[] => {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    return days.map(day => {
-        const rowData: HeatmapRow = { day };
-        // Add data for working hours (10:00 - 22:00)
-        for (let hour = 10; hour < 23; hour++) {
-            const hourKey = String(hour).padStart(2, '0') + 'h';
-            // Generate higher numbers during peak hours (11:00 - 14:00)
-            const isPeakHour = hour >= 11 && hour <= 14;
-            const baseValue = isPeakHour ? 25 : 10;
-            const variation = isPeakHour ? 25 : 15;
-            rowData[hourKey] = Math.floor(Math.random() * variation) + baseValue;
-        }
-        return rowData;
-    });
-};
-
-// Mock data for Average Wait Time Trends
-const waitTimeTrends = Array.from({ length: 14 }, (_, index) => ({
-    date: (index + 1) + '/9',
-    avgWaitTime: Math.floor(Math.random() * 15 + 10),
-    targetTime: 15
-}));
-
-// Mock data for Inventory Usage Trends
-const inventoryTrends = Array.from({ length: 14 }, (_, index) => ({
-    date: (index + 1) + '/9',
-    stock: Math.floor(Math.random() * 200 + 300),
-    usage: Math.floor(Math.random() * 150 + 200)
-}));
-
-// Mock data for Cost & Waste Analysis
-const wasteAnalysis = Array.from({ length: 6 }, (_, index) => ({
-    month: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'][index],
-    foodCost: Math.floor(Math.random() * 5000 + 15000),
-    wastePercentage: Number((Math.random() * 8 + 2).toFixed(1))
-}));
-
-// Staff Efficiency Score calculation
+// Staff Efficiency Score calculation (keeping this as mock for now since it's not in your API)
 const staffEfficiency = {
     score: 87,
     total: 100,
     trend: '+2.5%'
 };
 
-// Mock order data based on database schema
-const generateOrderDetails = (hour: string, date: string) => {
-    const dishes = [
-        { dish_id: 512, dish_name: 'Liqueurs', category: 'Beverages', subcategory: 'Alcoholic Drinks', price: 14, meal_period: 'both' },
-        { dish_id: 401, dish_name: 'Chocolate Cake', category: 'Desserts', subcategory: 'Cakes', price: 15, meal_period: 'both' },
-        { dish_id: 403, dish_name: 'Carrot Cake', category: 'Desserts', subcategory: 'Cakes', price: 14, meal_period: 'both' },
-        { dish_id: 304, dish_name: 'Potato Wedges', category: 'Sides', subcategory: 'Potatoes', price: 8, meal_period: 'both' },
-        { dish_id: 501, dish_name: 'Water', category: 'Beverages', subcategory: 'Non-Alcoholic Drinks', price: 2, meal_period: 'both' },
-        { dish_id: 410, dish_name: 'Rice Pudding', category: 'Desserts', subcategory: 'Puddings', price: 14, meal_period: 'both' },
-        { dish_id: 201, dish_name: 'Grilled Chicken', category: 'Main Course', subcategory: 'Poultry', price: 25, meal_period: 'both' },
-        { dish_id: 101, dish_name: 'Caesar Salad', category: 'Appetizers', subcategory: 'Salads', price: 12, meal_period: 'both' },
-    ];
-
-    const orders = [];
-    const numOrders = Math.floor(Math.random() * 8) + 3; // 3-10 different dishes per hour
-
-    for (let i = 0; i < numOrders; i++) {
-        const dish = dishes[Math.floor(Math.random() * dishes.length)];
-        const quantity = Math.floor(Math.random() * 15) + 1; // 1-15 quantity
-        const revenue = dish.price * quantity;
-        
-        orders.push({
-            ...dish,
-            date,
-            hour,
-            quantity_sold: quantity,
-            revenue,
-            avg_table_size: Math.round((Math.random() * 2 + 2) * 10) / 10, // 2.0-4.0
-            temp_max: Math.round((Math.random() * 10 + 25) * 10) / 10, // 25-35°C
-            is_weekend: new Date(date).getDay() === 0 || new Date(date).getDay() === 6,
-            is_holiday: false,
-            is_special_event: Math.random() > 0.8,
-        });
-    }
-
-    return orders;
-};
-
 const PerformanceTrends: React.FC = () => {
+    // Real data state
+    const [data, setData] = useState<PerformanceResponse | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [selectedRange, setSelectedRange] = useState({
+        startDate: "3/9/2025",
+        endDate: "6/9/2025",
+    });
+    
+    // UI state
+    const [selectedDates, setSelectedDates] = useState<string[]>([]); // Start with no selection
+    const [startDate, setStartDate] = useState<string | null>(null);
+    const [endDate, setEndDate] = useState<string | null>(null);
+    const [currentMonth, setCurrentMonth] = useState(9); // Start with September
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
+    const [orderDetails, setOrderDetails] = useState<any[]>([]);
+
     const handleExportPDF = () => {
         // PDF export logic would go here
         console.log('Exporting to PDF...');
     };
 
-    const [selectedDates, setSelectedDates] = useState<string[]>([]); // Start with no selection
-    const [startDate, setStartDate] = useState<string | null>(null);
-    const [endDate, setEndDate] = useState<string | null>(null);
-    const [currentMonth, setCurrentMonth] = useState(10); // Start with October
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
-    const [orderDetails, setOrderDetails] = useState<any[]>([]);
+    // Load performance data from API
+    const loadPerformanceData = async () => {
+        try {
+            setLoading(true);
+            console.log('Loading data for range:', selectedRange);
+            const result = await fetchPerformanceData(selectedRange.startDate, selectedRange.endDate);
+            console.log('API Response:', result);
+            setData(result);
+        } catch (err) {
+            console.error("Error fetching performance data:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadPerformanceData();
+    }, [selectedRange.startDate, selectedRange.endDate]);
+    
+    // Load data initially with default range
+    useEffect(() => {
+        if (selectedDates.length === 0) {
+            // Set initial date selection to current date range
+            const today = new Date();
+            const threeDaysAgo = new Date(today);
+            threeDaysAgo.setDate(today.getDate() - 3);
+            
+            const startDateStr = `${threeDaysAgo.getFullYear()}-${(threeDaysAgo.getMonth() + 1).toString().padStart(2, '0')}-${threeDaysAgo.getDate().toString().padStart(2, '0')}`;
+            const endDateStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+            
+            // Only set if we're in September or October 2025
+            if (today.getFullYear() === 2025 && (today.getMonth() === 8 || today.getMonth() === 9)) {
+                setStartDate(startDateStr);
+                setEndDate(endDateStr);
+                setSelectedDates(getDateRange(startDateStr, endDateStr));
+            }
+        }
+    }, []);
     
     // Generate calendar days for current month
     const getCurrentMonthDays = () => {
@@ -241,6 +204,11 @@ const PerformanceTrends: React.FC = () => {
             setStartDate(null);
             setEndDate(null);
             setSelectedDates([]);
+            // Reset to default range
+            setSelectedRange({
+                startDate: "3/9/2025",
+                endDate: "6/9/2025",
+            });
             return;
         }
         
@@ -248,6 +216,14 @@ const PerformanceTrends: React.FC = () => {
         if (endDate === date && startDate) {
             setEndDate(null);
             setSelectedDates([startDate]);
+            
+            // Update API for single date
+            const dateObj = new Date(startDate);
+            const apiDate = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+            setSelectedRange({
+                startDate: apiDate,
+                endDate: apiDate
+            });
             return;
         }
         
@@ -256,6 +232,14 @@ const PerformanceTrends: React.FC = () => {
             setStartDate(date);
             setEndDate(null);
             setSelectedDates([date]);
+            
+            // Update API for single date
+            const dateObj = new Date(date);
+            const apiDate = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+            setSelectedRange({
+                startDate: apiDate,
+                endDate: apiDate
+            });
         } else if (startDate && !endDate) {
             // Second click - validate that end date is after start date
             const start = new Date(startDate);
@@ -273,7 +257,19 @@ const PerformanceTrends: React.FC = () => {
             } else {
                 // Valid end date - create range
                 setEndDate(date);
-                setSelectedDates(getDateRange(startDate, date));
+                const dateRange = getDateRange(startDate, date);
+                setSelectedDates(dateRange);
+                
+                // Update API date range when user selects dates
+                const startDateObj = new Date(startDate);
+                const endDateObj = new Date(date);
+                const apiStartDate = `${startDateObj.getDate()}/${startDateObj.getMonth() + 1}/${startDateObj.getFullYear()}`;
+                const apiEndDate = `${endDateObj.getDate()}/${endDateObj.getMonth() + 1}/${endDateObj.getFullYear()}`;
+                
+                setSelectedRange({
+                    startDate: apiStartDate,
+                    endDate: apiEndDate
+                });
             }
         }
     };
@@ -287,64 +283,54 @@ const PerformanceTrends: React.FC = () => {
             const dateStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
             dates.push(dateStr);
         }
+        
         return dates;
     };
 
     const handleViewOrderDetails = (date: string) => {
         setSelectedTimeSlot(date);
-        setOrderDetails(generateOrderDetails('12:00', date)); // Use noon as default time
+        // Filter items from the API data for the selected date
+        const dayItems = data?.items?.filter(item => item.date === date) || [];
+        setOrderDetails(dayItems);
         setDialogOpen(true);
     };
 
-    // Generate daily order data based on database schema
-    const generateDailyOrderData = () => {
-        const dailyData: any[] = [];
-        
-        // Generate data for September and October 2025
-        const months = [
-            { month: 9, days: 30 }, // September
-            { month: 10, days: 31 } // October
-        ];
-        
-        months.forEach(({ month, days }) => {
-            for (let day = 1; day <= days; day++) {
-                const dateStr = `${day}/${month}/2025`;
-                const date = new Date(2025, month - 1, day);
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                const isHoliday = false; // For now, no holidays
-                const isSpecialEvent = day % 7 === 0; // Every 7th day is a special event
-                
-                // Calculate totals based on multiple dishes sold that day
-                const totalOrders = Math.floor(Math.random() * 50) + (isWeekend ? 80 : 120);
-                const avgPrice = 15 + Math.random() * 10; // Average price between 15-25
-                const totalRevenue = totalOrders * avgPrice;
-                
-                dailyData.push({
-                    date: dateStr,
-                    totalOrders,
-                    totalRevenue: totalRevenue.toFixed(2),
-                    avgTableSize: (2 + Math.random() * 2).toFixed(1), // 2-4 people average
-                    dailyCustomers: totalOrders * 2.5, // Approximate customers based on orders
-                    isWeekend,
-                    isHoliday,
-                    isSpecialEvent,
-                    status: totalOrders >= 150 ? 'high' : totalOrders >= 100 ? 'medium' : 'low'
-                });
-            }
-        });
-        return dailyData;
-    };
-
-    const allDailyData = generateDailyOrderData();
+    // Get daily breakdown data from API
+    const dailyBreakdown = data?.daily_breakdown || {};
+    const summary = data?.summary;
     
-    // Filter data to show only selected dates
+    // Convert daily breakdown to array format for table display
     const dailyData = selectedDates.length === 0 ? [] : 
-                     allDailyData.filter(row => {
-                         // Convert row.date (format: "14/10/2025") to match selectedDates format ("2025-10-14")
-                         const [day, month, year] = row.date.split('/');
-                         const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                         return selectedDates.includes(formattedDate);
-                     });
+                     Object.entries(dailyBreakdown)
+                        .filter(([date]) => {
+                            // Convert date (format: "5/9/2025") to match selectedDates format ("2025-09-05")
+                            const [day, month, year] = date.split('/');
+                            const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            const isIncluded = selectedDates.includes(formattedDate);
+                            console.log(`Checking date: ${date} -> ${formattedDate}, selected dates:`, selectedDates, 'included:', isIncluded);
+                            return isIncluded;
+                        })
+                        .map(([date, stats]) => {
+                            // Parse date to determine if it's weekend/special event
+                            const [day, month, year] = date.split('/');
+                            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                            const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                            
+                            // Find if this date has special events from the raw items
+                            const dayItems = data?.items?.filter(item => item.date === date) || [];
+                            const isSpecialEvent = dayItems.some(item => item.is_special_event === "TRUE" || item.is_special_event === true);
+                            const isHoliday = dayItems.some(item => item.is_holiday === "TRUE" || item.is_holiday === true);
+                            
+                            return {
+                                date,
+                                totalOrders: stats.orders,
+                                totalRevenue: stats.revenue.toFixed(2),
+                                isWeekend,
+                                isHoliday,
+                                isSpecialEvent,
+                                status: stats.orders >= 600 ? 'high' : stats.orders >= 400 ? 'medium' : 'low'
+                            };
+                        });
 
     return (
         <Box sx={{ 
@@ -361,7 +347,7 @@ const PerformanceTrends: React.FC = () => {
                                 Performance Analytics
                             </Typography>
                             <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                                Real-time insights and business intelligence dashboard
+                                Real-time insights from Lambda API • {summary ? `${summary.total_orders} orders • RM ${summary.total_revenue.toLocaleString()} revenue` : 'Loading...'}
                             </Typography>
                         </Box>
                     </Box>
@@ -400,65 +386,58 @@ const PerformanceTrends: React.FC = () => {
                 </Box>
             </HeaderBox>
 
-            <Grid container spacing={3}>
-                {/* Staff Efficiency Score */}
-                <Grid item xs={12} md={4}>
-                    <StyledPaper>
-                        <Typography variant="h6" gutterBottom>
-                            Staff Efficiency Score
-                        </Typography>
-                        <Box sx={{ 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center',
-                            mt: 2
-                        }}>
-                            <Typography variant="h2" sx={{ color: teal[500] }}>
-                                {staffEfficiency.score}%
-                            </Typography>
-                            <Typography 
-                                variant="subtitle1" 
-                                sx={{ 
-                                    color: staffEfficiency.trend.startsWith('+') ? 'success.main' : 'error.main',
-                                    mt: 1
-                                }}
-                            >
-                                {staffEfficiency.trend} vs last month
-                            </Typography>
-                        </Box>
-                    </StyledPaper>
+            {/* Summary Cards */}
+            {summary && (
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                    <Grid item xs={12} md={4}>
+                        <StyledPaper>
+                            <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    Total Orders
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: blue[600], fontWeight: 'bold' }}>
+                                    {summary.total_orders}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                    orders processed
+                                </Typography>
+                            </Box>
+                        </StyledPaper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <StyledPaper>
+                            <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    Total Revenue
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: teal[600], fontWeight: 'bold' }}>
+                                    RM {summary.total_revenue.toLocaleString()}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                    revenue generated
+                                </Typography>
+                            </Box>
+                        </StyledPaper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <StyledPaper>
+                            <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    Avg Table Size
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: orange[600], fontWeight: 'bold' }}>
+                                    {summary.avg_table_size.toFixed(1)}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                    people per table
+                                </Typography>
+                            </Box>
+                        </StyledPaper>
+                    </Grid>
                 </Grid>
+            )}
 
-                {/* Wait Time Trends */}
-                <Grid item xs={12} md={8}>
-                    <StyledPaper>
-                        <Typography variant="h6" gutterBottom>
-                            Average Wait Time Trends
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={waitTimeTrends}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="avgWaitTime" 
-                                    stroke={blue[500]} 
-                                    name="Average Wait Time"
-                                />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="targetTime" 
-                                    stroke={orange[500]} 
-                                    strokeDasharray="5 5" 
-                                    name="Target Time"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </StyledPaper>
-                </Grid>
+            <Grid container spacing={3}>
 
                 {/* Historical Order Patterns */}
                 <Grid item xs={12}>
@@ -502,6 +481,11 @@ const PerformanceTrends: React.FC = () => {
                                                     setSelectedDates([]);
                                                     setStartDate(null);
                                                     setEndDate(null);
+                                                    // Reset to default range
+                                                    setSelectedRange({
+                                                        startDate: "3/9/2025",
+                                                        endDate: "6/9/2025",
+                                                    });
                                                 }}
                                                 sx={{
                                                     color: '#dc2626',
@@ -714,11 +698,24 @@ const PerformanceTrends: React.FC = () => {
                                         <Typography variant="body2" sx={{ 
                                             color: '#6b7280'
                                         }}>
-                                            {selectedDates.length === 0 ? 'Please select a date range from the calendar to view order data' : 
+                                            {loading ? 'Loading data from Lambda API...' :
+                                             selectedDates.length === 0 ? 'Please select a date range from the calendar to view order data' : 
                                              selectedDates.length === 1 ? 'Showing data for selected date' :
                                              startDate && endDate ? `Showing data from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${selectedDates.length} days)` :
                                              `Showing data for ${selectedDates.length} selected dates`}
                                         </Typography>
+                                        {loading && (
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={loadPerformanceData}
+                                                disabled={loading}
+                                                sx={{ mt: 1 }}
+                                            >
+                                                {loading ? <CircularProgress size={16} sx={{ mr: 1 }} /> : null}
+                                                Refresh Data
+                                            </Button>
+                                        )}
                                     </Box>
 
                                     {/* Table Layout */}
@@ -786,7 +783,27 @@ const PerformanceTrends: React.FC = () => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {dailyData.length === 0 ? (
+                                                {loading ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                                                            <Box sx={{ 
+                                                                display: 'flex', 
+                                                                flexDirection: 'column', 
+                                                                alignItems: 'center', 
+                                                                gap: 2,
+                                                                color: '#6b7280'
+                                                            }}>
+                                                                <CircularProgress />
+                                                                <Typography variant="h6" sx={{ color: '#374151' }}>
+                                                                    Loading data from Lambda API...
+                                                                </Typography>
+                                                                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                                                    Fetching real sales data from DynamoDB
+                                                                </Typography>
+                                                            </Box>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : dailyData.length === 0 ? (
                                                     <TableRow>
                                                         <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
                                                             <Box sx={{ 
@@ -1065,66 +1082,17 @@ const PerformanceTrends: React.FC = () => {
                     </StyledPaper>
                 </Grid>
 
-                {/* Inventory Usage Trends */}
-                <Grid item xs={12} md={6}>
+                {/* Charts Section - Temporarily Disabled (Using Real Data Only) */}
+                <Grid item xs={12}>
                     <StyledPaper>
-                        <Typography variant="h6" gutterBottom>
-                            Inventory Usage Trends
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={inventoryTrends}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="stock" 
-                                    stroke={blue[500]} 
-                                    name="Stock Level"
-                                />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="usage" 
-                                    stroke={orange[500]} 
-                                    name="Usage"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </StyledPaper>
-                </Grid>
-
-                {/* Cost & Waste Analysis */}
-                <Grid item xs={12} md={6}>
-                    <StyledPaper>
-                        <Typography variant="h6" gutterBottom>
-                            Cost & Waste Analysis
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={wasteAnalysis}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis yAxisId="left" orientation="left" stroke={blue[500]} />
-                                <YAxis yAxisId="right" orientation="right" stroke={red[500]} />
-                                <Tooltip />
-                                <Legend />
-                                <Bar
-                                    yAxisId="left"
-                                    dataKey="foodCost"
-                                    name="Food Cost (RM)"
-                                    fill={blue[500]}
-                                    activeBar={<Rectangle fill={blue[700]} stroke={blue[700]} />}
-                                />
-                                <Bar
-                                    yAxisId="right"
-                                    dataKey="wastePercentage"
-                                    name="Waste %"
-                                    fill={red[500]}
-                                    activeBar={<Rectangle fill={red[700]} stroke={red[700]} />}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <Box sx={{ textAlign: 'center', py: 4 }}>
+                            <Typography variant="h6" gutterBottom sx={{ color: '#6b7280' }}>
+                                📊 Additional Analytics Coming Soon
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                Advanced charts and analytics will be available once more data points are integrated
+                            </Typography>
+                        </Box>
                     </StyledPaper>
                 </Grid>
             </Grid>
@@ -1190,18 +1158,25 @@ const PerformanceTrends: React.FC = () => {
                                                         size="small" 
                                                         sx={{ bgcolor: '#ecfdf5', color: '#047857', fontSize: '0.7rem' }}
                                                     />
-                                                    {order.is_special_event && (
+                                                    {(order.is_special_event === "TRUE" || order.is_special_event === true) && (
                                                         <Chip 
-                                                            label="Special Event" 
+                                                            label="🎉 Special Event" 
                                                             size="small" 
                                                             sx={{ bgcolor: '#fef3c7', color: '#92400e', fontSize: '0.7rem' }}
+                                                        />
+                                                    )}
+                                                    {(order.is_holiday === "TRUE" || order.is_holiday === true) && (
+                                                        <Chip 
+                                                            label="🏖️ Holiday" 
+                                                            size="small" 
+                                                            sx={{ bgcolor: '#ddd6fe', color: '#7c2d12', fontSize: '0.7rem' }}
                                                         />
                                                     )}
                                                 </Box>
                                             </Box>
                                             <Box sx={{ textAlign: 'right' }}>
                                                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#059669' }}>
-                                                    RM {order.revenue.toFixed(2)}
+                                                    RM {parseFloat(order.revenue).toFixed(2)}
                                                 </Typography>
                                                 <Typography variant="caption" sx={{ color: '#6b7280' }}>
                                                     {order.quantity_sold} × RM {order.price}
@@ -1225,7 +1200,7 @@ const PerformanceTrends: React.FC = () => {
                                                         Avg Table Size
                                                     </Typography>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                        {order.avg_table_size} people
+                                                        {parseFloat(order.avg_table_size).toFixed(1)} people
                                                     </Typography>
                                                 </Grid>
                                                 <Grid item xs={6} sm={3}>
@@ -1241,7 +1216,7 @@ const PerformanceTrends: React.FC = () => {
                                                         Temperature
                                                     </Typography>
                                                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                        {order.temp_max}°C
+                                                        {parseFloat(order.temp_max).toFixed(1)}°C
                                                     </Typography>
                                                 </Grid>
                                             </Grid>
@@ -1263,12 +1238,12 @@ const PerformanceTrends: React.FC = () => {
                     }}>
                         <Box>
                             <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                                Total Items: {orderDetails.reduce((sum, order) => sum + order.quantity_sold, 0)}
+                                Total Items: {orderDetails.reduce((sum, order) => sum + parseInt(order.quantity_sold), 0)}
                             </Typography>
                         </Box>
                         <Box sx={{ textAlign: 'right' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
-                                Total Revenue: RM {orderDetails.reduce((sum, order) => sum + order.revenue, 0).toFixed(2)}
+                                Total Revenue: RM {orderDetails.reduce((sum, order) => sum + parseFloat(order.revenue), 0).toFixed(2)}
                             </Typography>
                         </Box>
                     </Box>
