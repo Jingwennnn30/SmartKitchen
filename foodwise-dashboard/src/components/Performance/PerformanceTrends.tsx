@@ -310,9 +310,9 @@ const PerformanceTrends: React.FC = () => {
 
     // Filter data based on selected dates
     const dailyData = allDailyData.filter(row => {
-        // If no dates are selected, show all data
+        // If no dates are selected, show NO data (empty table)
         if (selectedDates.length === 0) {
-            return true;
+            return false;
         }
         
         // Convert date (format: "5/9/2025") to match selectedDates format ("2025-09-05")
@@ -335,6 +335,20 @@ const PerformanceTrends: React.FC = () => {
         date: (index + 1) + '/9',
         stock: Math.floor(Math.random() * 200 + 300),
         usage: Math.floor(Math.random() * 150 + 200)
+    }));
+
+    // Mock data for Average Wait Time Trends
+    const waitTimeTrends = Array.from({ length: 14 }, (_, index) => ({
+        date: (index + 1) + '/9',
+        avgWaitTime: Math.floor(Math.random() * 15 + 10),
+        targetTime: 15
+    }));
+
+    // Mock data for Cost & Waste Analysis
+    const wasteAnalysis = Array.from({ length: 6 }, (_, index) => ({
+        month: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'][index],
+        foodCost: Math.floor(Math.random() * 5000 + 15000),
+        wastePercentage: Number((Math.random() * 8 + 2).toFixed(1))
     }));
 
     // Debug logging
@@ -397,6 +411,433 @@ const PerformanceTrends: React.FC = () => {
                     />
                 </Box>
             </HeaderBox>
+
+            {/* Staff Efficiency Score and Cost & Waste Analysis - Side by Side */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} md={4}>
+                    <StyledPaper>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 1 }}>
+                            🤖 AI-Enhanced Staff Efficiency
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                            How AI technology improves kitchen operations
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+                            <Chip 
+                                label="AI Powered" 
+                                size="small" 
+                                sx={{ 
+                                    bgcolor: '#f0f9ff', 
+                                    color: '#0369a1',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.7rem'
+                                }} 
+                            />
+                            <Chip 
+                                label="Smart Kitchen" 
+                                size="small" 
+                                sx={{ 
+                                    bgcolor: '#ecfdf5', 
+                                    color: '#059669',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.7rem'
+                                }} 
+                            />
+                        </Box>
+                        
+                        <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            position: 'relative',
+                            mb: 3
+                        }}>
+                            {/* Circular Progress */}
+                            <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                                <CircularProgress
+                                    variant="determinate"
+                                    value={staffEfficiency.score}
+                                    size={130}
+                                    thickness={8}
+                                    sx={{
+                                        color: '#10b981',
+                                        '& .MuiCircularProgress-circle': {
+                                            strokeLinecap: 'round',
+                                        },
+                                    }}
+                                />
+                                <CircularProgress
+                                    variant="determinate"
+                                    value={100}
+                                    size={130}
+                                    thickness={8}
+                                    sx={{
+                                        color: '#f3f4f6',
+                                        position: 'absolute',
+                                        left: 0,
+                                        zIndex: -1,
+                                    }}
+                                />
+                                <Box sx={{
+                                    top: 0,
+                                    left: 0,
+                                    bottom: 0,
+                                    right: 0,
+                                    position: 'absolute',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'column'
+                                }}>
+                                    <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                        {staffEfficiency.score}%
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                                        Efficiency
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                        
+                        {/* AI Impact Metrics */}
+                        <Box sx={{ 
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1.5,
+                            mb: 3
+                        }}>
+                            <Box sx={{ 
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                p: 1.5,
+                                bgcolor: '#f0f9ff',
+                                borderRadius: '8px',
+                                border: '1px solid #bfdbfe'
+                            }}>
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: '#1e40af', display: 'block', fontWeight: 'bold' }}>
+                                        AI Recipe Suggestions
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ color: '#1d4ed8', fontWeight: 'bold' }}>
+                                        +42% faster
+                                    </Typography>
+                                </Box>
+                                <Typography sx={{ fontSize: '1.2rem' }}>🧠</Typography>
+                            </Box>
+
+                            <Box sx={{ 
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                p: 1.5,
+                                bgcolor: '#ecfdf5',
+                                borderRadius: '8px',
+                                border: '1px solid #bbf7d0'
+                            }}>
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: '#047857', display: 'block', fontWeight: 'bold' }}>
+                                        Smart Order Queue
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ color: '#059669', fontWeight: 'bold' }}>
+                                        -38% wait time
+                                    </Typography>
+                                </Box>
+                                <Typography sx={{ fontSize: '1.2rem' }}>🚀</Typography>
+                            </Box>
+
+                            <Box sx={{ 
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                p: 1.5,
+                                bgcolor: '#fef3c7',
+                                borderRadius: '8px',
+                                border: '1px solid #fed7aa'
+                            }}>
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: '#92400e', display: 'block', fontWeight: 'bold' }}>
+                                        Predictive Analytics
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ color: '#d97706', fontWeight: 'bold' }}>
+                                        97% accuracy
+                                    </Typography>
+                                </Box>
+                                <Typography sx={{ fontSize: '1.2rem' }}>📊</Typography>
+                            </Box>
+                        </Box>
+                        
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Chip 
+                                label={`${staffEfficiency.trend} with AI integration`}
+                                size="small"
+                                sx={{ 
+                                    bgcolor: '#ecfdf5', 
+                                    color: '#059669',
+                                    fontWeight: 'bold'
+                                }}
+                            />
+                            <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mt: 1 }}>
+                                AI systems actively optimizing kitchen workflow
+                            </Typography>
+                        </Box>
+                    </StyledPaper>
+                </Grid>
+                <Grid item xs={12} md={8}>
+                    <StyledPaper>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+                            <Box>
+                                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 1 }}>
+                                    💰 Cost & Waste Analysis
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                    Monitor food costs and waste reduction trends over time
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Chip 
+                                    label="Target: <5%" 
+                                    size="small" 
+                                    sx={{ 
+                                        bgcolor: '#fef2f2', 
+                                        color: '#dc2626',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.75rem'
+                                    }} 
+                                />
+                                <Chip 
+                                    label="Monthly Trend" 
+                                    size="small" 
+                                    sx={{ 
+                                        bgcolor: '#eff6ff', 
+                                        color: '#2563eb',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.75rem'
+                                    }} 
+                                />
+                            </Box>
+                        </Box>
+                        <ResponsiveContainer width="100%" height={280}>
+                            <BarChart data={wasteAnalysis} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <defs>
+                                    <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                                        <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.7}/>
+                                    </linearGradient>
+                                    <linearGradient id="wasteGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9}/>
+                                        <stop offset="100%" stopColor="#dc2626" stopOpacity={0.8}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid 
+                                    strokeDasharray="3 3" 
+                                    stroke="#f3f4f6" 
+                                    horizontal={true}
+                                    vertical={false}
+                                />
+                                <XAxis 
+                                    dataKey="month" 
+                                    stroke="#6b7280"
+                                    fontSize={12}
+                                    fontWeight="medium"
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis 
+                                    yAxisId="left"
+                                    stroke="#3b82f6"
+                                    fontSize={11}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    label={{ 
+                                        value: 'Food Cost (RM)', 
+                                        angle: -90, 
+                                        position: 'insideLeft',
+                                        style: { textAnchor: 'middle', fill: '#3b82f6', fontWeight: 'bold' }
+                                    }}
+                                />
+                                <YAxis 
+                                    yAxisId="right" 
+                                    orientation="right"
+                                    stroke="#ef4444"
+                                    fontSize={11}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    domain={[0, 12]}
+                                    label={{ 
+                                        value: 'Waste %', 
+                                        angle: 90, 
+                                        position: 'insideRight',
+                                        style: { textAnchor: 'middle', fill: '#ef4444', fontWeight: 'bold' }
+                                    }}
+                                />
+                                <Tooltip 
+                                    contentStyle={{
+                                        backgroundColor: '#ffffff',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                                        padding: '16px'
+                                    }}
+                                    labelStyle={{
+                                        fontWeight: 'bold',
+                                        color: '#1f2937',
+                                        marginBottom: '8px'
+                                    }}
+                                    formatter={(value, name) => [
+                                        name === 'Food Cost (RM)' ? `RM ${value.toLocaleString()}` : `${value}%`,
+                                        name
+                                    ]}
+                                />
+                                <Legend 
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    iconType="rect"
+                                    wrapperStyle={{
+                                        fontSize: '12px',
+                                        fontWeight: 'bold'
+                                    }}
+                                />
+                                <Bar 
+                                    yAxisId="left"
+                                    dataKey="foodCost" 
+                                    fill="url(#costGradient)"
+                                    name="Food Cost (RM)"
+                                    radius={[6, 6, 0, 0]}
+                                    maxBarSize={60}
+                                />
+                                <Line 
+                                    yAxisId="right"
+                                    type="monotone" 
+                                    dataKey="wastePercentage" 
+                                    stroke="#ef4444" 
+                                    strokeWidth={4}
+                                    name="Waste %"
+                                    dot={{ 
+                                        fill: '#ffffff', 
+                                        stroke: '#ef4444',
+                                        strokeWidth: 3, 
+                                        r: 6,
+                                        filter: 'drop-shadow(0 2px 4px rgba(239, 68, 68, 0.3))'
+                                    }}
+                                    activeDot={{ 
+                                        r: 8, 
+                                        stroke: '#ef4444', 
+                                        strokeWidth: 3,
+                                        fill: '#ffffff',
+                                        filter: 'drop-shadow(0 4px 8px rgba(239, 68, 68, 0.4))'
+                                    }}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                        
+                        {/* Simple Insights Section */}
+                        <Box sx={{ 
+                            mt: 3, 
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 3
+                        }}>
+                            {/* Monthly Cost */}
+                            <Box sx={{ 
+                                flex: 1,
+                                textAlign: 'center',
+                                p: 3,
+                                bgcolor: '#ffffff',
+                                borderRadius: '12px',
+                                border: '2px solid #e0f2fe',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                            }}>
+                                <Typography variant="body2" sx={{ color: '#0369a1', fontWeight: 'bold', mb: 1 }}>
+                                    💰 Average Monthly Cost
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: '#0c4a6e', fontWeight: 'bold', mb: 1 }}>
+                                    RM {Math.round(wasteAnalysis.reduce((sum, item) => sum + item.foodCost, 0) / wasteAnalysis.length).toLocaleString()}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                    Last 6 months average
+                                </Typography>
+                            </Box>
+
+                            {/* Waste Rate with Visual Bar */}
+                            <Box sx={{ 
+                                flex: 1,
+                                textAlign: 'center',
+                                p: 3,
+                                bgcolor: '#ffffff',
+                                borderRadius: '12px',
+                                border: '2px solid #fef2f2',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                            }}>
+                                <Typography variant="body2" sx={{ color: '#dc2626', fontWeight: 'bold', mb: 1 }}>
+                                    📊 Current Waste Rate
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: '#991b1b', fontWeight: 'bold', mb: 2 }}>
+                                    {(wasteAnalysis.reduce((sum, item) => sum + item.wastePercentage, 0) / wasteAnalysis.length).toFixed(1)}%
+                                </Typography>
+                                
+                                {/* Simple Progress Bar */}
+                                <Box sx={{ 
+                                    width: '100%', 
+                                    height: 8, 
+                                    bgcolor: '#f3f4f6', 
+                                    borderRadius: 4, 
+                                    mb: 1,
+                                    overflow: 'hidden'
+                                }}>
+                                    <Box sx={{ 
+                                        width: `${Math.min((wasteAnalysis.reduce((sum, item) => sum + item.wastePercentage, 0) / wasteAnalysis.length) * 20, 100)}%`,
+                                        height: '100%',
+                                        bgcolor: (wasteAnalysis.reduce((sum, item) => sum + item.wastePercentage, 0) / wasteAnalysis.length) > 5 ? '#ef4444' : '#10b981',
+                                        borderRadius: 4
+                                    }} />
+                                </Box>
+                                <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                    Target: Under 5%
+                                </Typography>
+                            </Box>
+
+                            {/* Status */}
+                            <Box sx={{ 
+                                flex: 1,
+                                textAlign: 'center',
+                                p: 3,
+                                bgcolor: '#ffffff',
+                                borderRadius: '12px',
+                                border: wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 
+                                    ? '2px solid #ecfdf5' 
+                                    : '2px solid #fef7cd',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                            }}>
+                                <Typography variant="body2" sx={{ 
+                                    color: wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? '#059669' : '#d97706',
+                                    fontWeight: 'bold', 
+                                    mb: 1 
+                                }}>
+                                    🎯 Performance Status
+                                </Typography>
+                                <Typography variant="h5" sx={{ 
+                                    color: wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? '#047857' : '#b45309',
+                                    fontWeight: 'bold',
+                                    mb: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 1
+                                }}>
+                                    {wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? '✅' : '⚠️'}
+                                    {wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? 'On Target' : 'Above Target'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                    {wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 
+                                        ? 'Great job! Keep it up' 
+                                        : 'Review waste processes'}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </StyledPaper>
+                </Grid>
+            </Grid>
 
             {/* Summary Cards */}
             {summary && (
@@ -475,14 +916,15 @@ const PerformanceTrends: React.FC = () => {
                                 <Box sx={{ 
                                     background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
                                     borderRadius: '16px', 
-                                    p: 3,
+                                    p: 2,
                                     border: '1px solid #e5e7eb',
-                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                                    maxWidth: '300px'
                                 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <CalendarTodayIcon sx={{ fontSize: 20, color: '#3b82f6' }} />
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                            <CalendarTodayIcon sx={{ fontSize: 18, color: '#3b82f6' }} />
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#1f2937', fontSize: '0.9rem' }}>
                                                 Select Dates
                                             </Typography>
                                         </Box>
@@ -493,7 +935,6 @@ const PerformanceTrends: React.FC = () => {
                                                     setSelectedDates([]);
                                                     setStartDate(null);
                                                     setEndDate(null);
-                                                    // Reset to default range
                                                     setSelectedRange({
                                                         startDate: "3/9/2025",
                                                         endDate: "6/9/2025",
@@ -501,79 +942,63 @@ const PerformanceTrends: React.FC = () => {
                                                 }}
                                                 sx={{
                                                     color: '#dc2626',
-                                                    fontSize: '0.75rem',
+                                                    fontSize: '0.7rem',
                                                     textTransform: 'none',
                                                     minWidth: 'auto',
                                                     p: 0.5,
-                                                    '&:hover': {
-                                                        bgcolor: '#fee2e2'
-                                                    }
+                                                    '&:hover': { bgcolor: '#fee2e2' }
                                                 }}
                                             >
-                                                Clear ({selectedDates.length})
+                                                Clear
                                             </Button>
                                         )}
                                     </Box>
                                     
                                     {/* Instructions */}
-                                    <Box sx={{ mb: 2, p: 2, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mb: 1 }}>
-                                            📅 How to select dates:
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', fontSize: '0.7rem' }}>
-                                            • Click a date to select start date
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', fontSize: '0.7rem' }}>
-                                            • Click another date after start to create range
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', fontSize: '0.7rem' }}>
-                                            • Click same date again to unselect
+                                    <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f8fafc', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
+                                            📅 Click dates to select range
                                         </Typography>
                                         {startDate && !endDate && (
-                                            <Typography variant="caption" sx={{ color: '#059669', display: 'block', fontSize: '0.7rem', fontWeight: 'bold', mt: 1 }}>
-                                                ✓ Start: {new Date(startDate).toLocaleDateString()} - Select end date
+                                            <Typography variant="caption" sx={{ color: '#059669', display: 'block', fontSize: '0.65rem', fontWeight: 'bold' }}>
+                                                ✓ Start: {new Date(startDate).toLocaleDateString()} - Select end
                                             </Typography>
                                         )}
                                     </Box>
                                     
-                                    {/* Calendar Month Display */}
+                                    {/* Compact Calendar */}
                                     <Box sx={{ 
                                         bgcolor: 'white', 
-                                        borderRadius: '12px', 
-                                        p: 2,
+                                        borderRadius: '8px', 
+                                        p: 1.5,
                                         border: '1px solid #e5e7eb',
-                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                                        width: '100%'
                                     }}>
-                                        {/* Month Header with Navigation */}
+                                        {/* Month Header */}
                                         <Box sx={{ 
                                             display: 'flex', 
                                             justifyContent: 'space-between', 
                                             alignItems: 'center',
-                                            mb: 2,
-                                            p: 1,
-                                            bgcolor: '#f8fafc',
-                                            borderRadius: '8px'
+                                            mb: 1.5,
+                                            px: 1
                                         }}>
                                             <IconButton 
                                                 size="small"
                                                 onClick={() => setCurrentMonth(currentMonth === 10 ? 9 : 10)}
                                                 sx={{ 
                                                     color: '#6b7280',
-                                                    '&:hover': { bgcolor: '#e5e7eb' }
+                                                    '&:hover': { bgcolor: '#f3f4f6' },
+                                                    width: '28px',
+                                                    height: '28px',
+                                                    fontSize: '12px'
                                                 }}
                                             >
-                                                <Box sx={{ 
-                                                    transform: 'rotate(180deg)',
-                                                    display: 'flex',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    ▶
-                                                </Box>
+                                                ←
                                             </IconButton>
-                                            <Typography variant="subtitle1" sx={{ 
+                                            <Typography variant="body2" sx={{ 
                                                 fontWeight: 'bold', 
                                                 color: '#1f2937',
-                                                fontSize: '1rem'
+                                                fontSize: '0.8rem'
                                             }}>
                                                 {currentMonth === 10 ? 'October' : 'September'} 2025
                                             </Typography>
@@ -582,10 +1007,13 @@ const PerformanceTrends: React.FC = () => {
                                                 onClick={() => setCurrentMonth(currentMonth === 10 ? 9 : 10)}
                                                 sx={{ 
                                                     color: '#6b7280',
-                                                    '&:hover': { bgcolor: '#e5e7eb' }
+                                                    '&:hover': { bgcolor: '#f3f4f6' },
+                                                    width: '28px',
+                                                    height: '28px',
+                                                    fontSize: '12px'
                                                 }}
                                             >
-                                                ▶
+                                                →
                                             </IconButton>
                                         </Box>
                                         
@@ -593,89 +1021,79 @@ const PerformanceTrends: React.FC = () => {
                                         <Box sx={{ 
                                             display: 'grid', 
                                             gridTemplateColumns: 'repeat(7, 1fr)', 
-                                            gap: 1,
+                                            gap: '1px',
                                             mb: 1
                                         }}>
-                                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                                                <Typography key={day} variant="caption" sx={{ 
-                                                    textAlign: 'center', 
-                                                    color: '#6b7280',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 'bold',
-                                                    p: 1
+                                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                                                <Box key={index} sx={{ 
+                                                    textAlign: 'center',
+                                                    height: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
                                                 }}>
-                                                    {day}
-                                                </Typography>
+                                                    <Typography variant="caption" sx={{ 
+                                                        color: '#9ca3af',
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: '500'
+                                                    }}>
+                                                        {day}
+                                                    </Typography>
+                                                </Box>
                                             ))}
                                         </Box>
                                         
-                                        {/* Calendar days */}
+                                        {/* Calendar Grid */}
                                         <Box sx={{ 
                                             display: 'grid', 
                                             gridTemplateColumns: 'repeat(7, 1fr)', 
-                                            gap: 1
+                                            gap: '1px'
                                         }}>
                                             {getCurrentMonthDays().map((dayData, index) => (
-                                                <Box key={index} sx={{ aspectRatio: '1', position: 'relative' }}>
-                                                    {dayData && (
-                                                        <Button
-                                                            size="small"
-                                                            disabled={dayData.isDisabled || !dayData.isSelectable}
+                                                <Box key={index} sx={{ 
+                                                    width: '30px',
+                                                    height: '30px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    {dayData ? (
+                                                        <Box
                                                             onClick={() => dayData.isSelectable && handleDateSelection(dayData.date)}
                                                             sx={{
-                                                                minWidth: 0,
-                                                                width: '100%',
-                                                                height: '100%',
-                                                                fontSize: '0.8rem',
-                                                                borderRadius: dayData.isInRange ? '2px' : '8px',
-                                                                fontWeight: dayData.isStartDate || dayData.isEndDate || dayData.isToday ? 'bold' : 'medium',
-                                                                bgcolor: (dayData.isDisabled || !dayData.isSelectable) ? '#f3f4f6' :
+                                                                width: '26px',
+                                                                height: '26px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '0.7rem',
+                                                                borderRadius: '4px',
+                                                                cursor: dayData.isSelectable ? 'pointer' : 'not-allowed',
+                                                                fontWeight: dayData.isStartDate || dayData.isEndDate || dayData.isToday ? 'bold' : 'normal',
+                                                                bgcolor: (dayData.isDisabled || !dayData.isSelectable) ? '#f9fafb' :
                                                                         dayData.isStartDate ? '#10b981' : 
                                                                         dayData.isEndDate ? '#10b981' :
                                                                         dayData.isInRange ? '#d1fae5' :
                                                                         dayData.isToday ? '#dbeafe' : 
                                                                         'transparent',
-                                                                color: (dayData.isDisabled || !dayData.isSelectable) ? '#9ca3af' :
+                                                                color: (dayData.isDisabled || !dayData.isSelectable) ? '#d1d5db' :
                                                                        (dayData.isStartDate || dayData.isEndDate) ? 'white' : 
                                                                        dayData.isInRange ? '#059669' :
                                                                        dayData.isToday ? '#1d4ed8' : '#374151',
-                                                                border: dayData.isToday && !dayData.isStartDate && !dayData.isEndDate ? '2px solid #3b82f6' : 
-                                                                        (dayData.isStartDate || dayData.isEndDate) ? '2px solid #059669' : 'none',
-                                                                position: 'relative',
-                                                                '&::before': dayData.isStartDate && endDate ? {
-                                                                    content: '""',
-                                                                    position: 'absolute',
-                                                                    top: 0,
-                                                                    right: '-2px',
-                                                                    bottom: 0,
-                                                                    width: '4px',
-                                                                    bgcolor: '#d1fae5'
-                                                                } : {},
-                                                                '&::after': dayData.isEndDate && startDate ? {
-                                                                    content: '""',
-                                                                    position: 'absolute',
-                                                                    top: 0,
-                                                                    left: '-2px',
-                                                                    bottom: 0,
-                                                                    width: '4px',
-                                                                    bgcolor: '#d1fae5'
-                                                                } : {},
-                                                                '&:hover': {
-                                                                    bgcolor: (dayData.isDisabled || !dayData.isSelectable) ? '#f3f4f6' :
-                                                                            (dayData.isStartDate || dayData.isEndDate) ? '#059669' : 
+                                                                border: dayData.isToday && !dayData.isStartDate && !dayData.isEndDate ? '1px solid #3b82f6' : 'none',
+                                                                '&:hover': dayData.isSelectable ? {
+                                                                    bgcolor: (dayData.isStartDate || dayData.isEndDate) ? '#059669' : 
                                                                             dayData.isInRange ? '#bbf7d0' :
                                                                             '#f0f9ff',
-                                                                    transform: (dayData.isDisabled || !dayData.isSelectable) ? 'none' : 'scale(1.05)'
-                                                                },
-                                                                '&:disabled': {
-                                                                    cursor: 'not-allowed',
-                                                                    opacity: dayData.isSelectable ? 0.3 : 0.6
-                                                                },
-                                                                transition: 'all 0.2s ease'
+                                                                    transform: 'scale(1.1)'
+                                                                } : {},
+                                                                transition: 'all 0.15s ease'
                                                             }}
                                                         >
                                                             {dayData.day}
-                                                        </Button>
+                                                        </Box>
+                                                    ) : (
+                                                        <Box sx={{ width: '26px', height: '26px' }} />
                                                     )}
                                                 </Box>
                                             ))}
@@ -711,7 +1129,7 @@ const PerformanceTrends: React.FC = () => {
                                             color: '#6b7280'
                                         }}>
                                             {loading ? 'Loading data from Lambda API...' :
-                                             selectedDates.length === 0 ? `Showing all available data (${dailyData.length} days)` : 
+                                             selectedDates.length === 0 ? 'Select dates from the calendar to view order analysis' : 
                                              selectedDates.length === 1 ? `Showing data for selected date (${dailyData.length} ${dailyData.length === 1 ? 'day' : 'days'} found)` :
                                              startDate && endDate ? `Showing data from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${dailyData.length} of ${selectedDates.length} days found)` :
                                              `Showing data for ${selectedDates.length} selected dates (${dailyData.length} days found)`}
@@ -732,7 +1150,10 @@ const PerformanceTrends: React.FC = () => {
 
                                     {/* Table Layout */}
                                     <TableContainer sx={{ 
-                                        height: 500,
+                                        height: 380, // Match calendar height for proper alignment
+                                        overflow: 'auto',
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '8px',
                                         '& .MuiTableCell-root': {
                                             borderBottom: '1px solid #e5e7eb',
                                         }
@@ -1132,26 +1553,26 @@ const PerformanceTrends: React.FC = () => {
                     </StyledPaper>
                 </Grid>
 
-                {/* Stock vs Usage Chart */}
-                <Grid item xs={12}>
+                {/* Stock vs Usage and Wait Time Charts - Side by Side */}
+                <Grid item xs={12} md={6}>
                     <StyledPaper>
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 3 }}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 2 }}>
                             📈 Stock vs Usage Trends
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
                             Track inventory levels against daily usage patterns
                         </Typography>
-                        <ResponsiveContainer width="100%" height={400}>
+                        <ResponsiveContainer width="100%" height={300}>
                             <LineChart data={inventoryTrends}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                 <XAxis 
                                     dataKey="date" 
                                     stroke="#6b7280"
-                                    fontSize={12}
+                                    fontSize={11}
                                 />
                                 <YAxis 
                                     stroke="#6b7280"
-                                    fontSize={12}
+                                    fontSize={11}
                                 />
                                 <Tooltip 
                                     contentStyle={{
@@ -1166,19 +1587,19 @@ const PerformanceTrends: React.FC = () => {
                                     type="monotone" 
                                     dataKey="stock" 
                                     stroke={blue[500]} 
-                                    strokeWidth={3}
+                                    strokeWidth={2}
                                     name="Stock Level"
-                                    dot={{ fill: blue[500], strokeWidth: 2, r: 5 }}
-                                    activeDot={{ r: 7, stroke: blue[500], strokeWidth: 2 }}
+                                    dot={{ fill: blue[500], strokeWidth: 1, r: 3 }}
+                                    activeDot={{ r: 5, stroke: blue[500], strokeWidth: 2 }}
                                 />
                                 <Line 
                                     type="monotone" 
                                     dataKey="usage" 
                                     stroke={orange[500]} 
-                                    strokeWidth={3}
+                                    strokeWidth={2}
                                     name="Usage"
-                                    dot={{ fill: orange[500], strokeWidth: 2, r: 5 }}
-                                    activeDot={{ r: 7, stroke: orange[500], strokeWidth: 2 }}
+                                    dot={{ fill: orange[500], strokeWidth: 1, r: 3 }}
+                                    activeDot={{ r: 5, stroke: orange[500], strokeWidth: 2 }}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
@@ -1187,36 +1608,128 @@ const PerformanceTrends: React.FC = () => {
                         <Box sx={{ 
                             display: 'flex', 
                             justifyContent: 'space-between', 
-                            mt: 3, 
-                            pt: 3, 
+                            mt: 2, 
+                            pt: 2, 
                             borderTop: '1px solid #e5e7eb',
-                            gap: 2
+                            gap: 1
                         }}>
                             <Box sx={{ textAlign: 'center', flex: 1 }}>
-                                <Typography variant="h6" sx={{ color: blue[600], fontWeight: 'bold' }}>
+                                <Typography variant="body2" sx={{ color: blue[600], fontWeight: 'bold' }}>
                                     {Math.round(inventoryTrends.reduce((sum, item) => sum + item.stock, 0) / inventoryTrends.length)}
                                 </Typography>
-                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                                    Avg Stock Level
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.7rem' }}>
+                                    Avg Stock
                                 </Typography>
                             </Box>
                             <Box sx={{ textAlign: 'center', flex: 1 }}>
-                                <Typography variant="h6" sx={{ color: orange[600], fontWeight: 'bold' }}>
+                                <Typography variant="body2" sx={{ color: orange[600], fontWeight: 'bold' }}>
                                     {Math.round(inventoryTrends.reduce((sum, item) => sum + item.usage, 0) / inventoryTrends.length)}
                                 </Typography>
-                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                                    Avg Daily Usage
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.7rem' }}>
+                                    Avg Usage
                                 </Typography>
                             </Box>
                             <Box sx={{ textAlign: 'center', flex: 1 }}>
-                                <Typography variant="h6" sx={{ 
+                                <Typography variant="body2" sx={{ 
                                     color: inventoryTrends.some(item => item.stock < item.usage) ? red[600] : teal[600], 
                                     fontWeight: 'bold' 
                                 }}>
-                                    {inventoryTrends.filter(item => item.stock < item.usage).length > 0 ? 'Alert' : 'Optimal'}
+                                    {inventoryTrends.filter(item => item.stock < item.usage).length > 0 ? 'Alert' : 'Good'}
                                 </Typography>
-                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                                    Stock Status
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.7rem' }}>
+                                    Status
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </StyledPaper>
+                </Grid>
+
+                {/* Average Wait Time Trends */}
+                <Grid item xs={12} md={6}>
+                    <StyledPaper>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 2 }}>
+                            ⏱️ Average Wait Time Trends
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
+                            Monitor customer service efficiency and wait times
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={waitTimeTrends}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis 
+                                    dataKey="date" 
+                                    stroke="#6b7280"
+                                    fontSize={11}
+                                />
+                                <YAxis 
+                                    stroke="#6b7280"
+                                    fontSize={11}
+                                    domain={[0, 25]}
+                                />
+                                <Tooltip 
+                                    contentStyle={{
+                                        backgroundColor: '#ffffff',
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                />
+                                <Legend />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="avgWaitTime" 
+                                    stroke="#8b5cf6" 
+                                    strokeWidth={3}
+                                    name="Avg Wait Time (min)"
+                                    dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                                    activeDot={{ r: 6, stroke: '#8b5cf6', strokeWidth: 2 }}
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="targetTime" 
+                                    stroke="#ef4444" 
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    name="Target (15 min)"
+                                    dot={false}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        
+                        {/* Chart Insights */}
+                        <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            mt: 2, 
+                            pt: 2, 
+                            borderTop: '1px solid #e5e7eb',
+                            gap: 1
+                        }}>
+                            <Box sx={{ textAlign: 'center', flex: 1 }}>
+                                <Typography variant="body2" sx={{ color: '#8b5cf6', fontWeight: 'bold' }}>
+                                    {Math.round(waitTimeTrends.reduce((sum, item) => sum + item.avgWaitTime, 0) / waitTimeTrends.length)} min
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.7rem' }}>
+                                    Avg Wait
+                                </Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', flex: 1 }}>
+                                <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 'bold' }}>
+                                    15 min
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.7rem' }}>
+                                    Target
+                                </Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', flex: 1 }}>
+                                <Typography variant="body2" sx={{ 
+                                    color: waitTimeTrends.some(item => item.avgWaitTime > 15) ? '#ef4444' : '#10b981', 
+                                    fontWeight: 'bold' 
+                                }}>
+                                    {waitTimeTrends.filter(item => item.avgWaitTime > 15).length > 3 ? 'Above' : 'On Track'}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.7rem' }}>
+                                    vs Target
                                 </Typography>
                             </Box>
                         </Box>
