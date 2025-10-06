@@ -979,112 +979,148 @@ const PerformanceTrends: React.FC = () => {
 
                         <Divider sx={{ my: 3 }} />
                         
-                        {/* Enhanced Summary Stats */}
+                        {/* Enhanced Summary Stats - Real Data Based */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
-                            <MetricCard sx={{ flex: 1 }}>
-                                <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                                    <Box sx={{ 
-                                        width: 48, 
-                                        height: 48, 
-                                        borderRadius: '50%', 
-                                        bgcolor: alpha('#1976d2', 0.1),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        margin: '0 auto 16px auto'
-                                    }}>
-                                        <TrendingUpIcon sx={{ color: '#1976d2', fontSize: 24 }} />
-                                    </Box>
-                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
-                                        12:00-14:00
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                                        Peak Performance Hours
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ 
-                                        color: '#10b981', 
-                                        fontWeight: 'bold',
-                                        bgcolor: alpha('#10b981', 0.1),
-                                        px: 1,
-                                        py: 0.5,
-                                        borderRadius: 1,
-                                        mt: 1,
-                                        display: 'inline-block'
-                                    }}>
-                                        46 avg orders/hr
-                                    </Typography>
-                                </CardContent>
-                            </MetricCard>
-                            
-                            <MetricCard sx={{ flex: 1 }}>
-                                <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                                    <Box sx={{ 
-                                        width: 48, 
-                                        height: 48, 
-                                        borderRadius: '50%', 
-                                        bgcolor: alpha('#2e7d32', 0.1),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        margin: '0 auto 16px auto'
-                                    }}>
-                                        <RestaurantIcon sx={{ color: '#2e7d32', fontSize: 24 }} />
-                                    </Box>
-                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2e7d32', mb: 1 }}>
-                                        Saturday
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                                        Highest Volume Day
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ 
-                                        color: '#2e7d32', 
-                                        fontWeight: 'bold',
-                                        bgcolor: alpha('#2e7d32', 0.1),
-                                        px: 1,
-                                        py: 0.5,
-                                        borderRadius: 1,
-                                        mt: 1,
-                                        display: 'inline-block'
-                                    }}>
-                                        320 total orders
-                                    </Typography>
-                                </CardContent>
-                            </MetricCard>
-                            
-                            <MetricCard sx={{ flex: 1 }}>
-                                <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                                    <Box sx={{ 
-                                        width: 48, 
-                                        height: 48, 
-                                        borderRadius: '50%', 
-                                        bgcolor: alpha('#ed6c02', 0.1),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        margin: '0 auto 16px auto'
-                                    }}>
-                                        <AnalyticsIcon sx={{ color: '#ed6c02', fontSize: 24 }} />
-                                    </Box>
-                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#ed6c02', mb: 1 }}>
-                                        +12.5%
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                                        Weekly Growth Rate
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ 
-                                        color: '#10b981', 
-                                        fontWeight: 'bold',
-                                        bgcolor: alpha('#10b981', 0.1),
-                                        px: 1,
-                                        py: 0.5,
-                                        borderRadius: 1,
-                                        mt: 1,
-                                        display: 'inline-block'
-                                    }}>
-                                        Above target
-                                    </Typography>
-                                </CardContent>
-                            </MetricCard>
+                            {(() => {
+                                // Calculate metrics from real data
+                                const avgOrdersPerDay = dailyData.length > 0 ? Math.round(summary.total_orders / dailyData.length) : 0;
+                                
+                                // Find highest volume day
+                                const highestVolumeDay = dailyData.reduce((prev, current) => 
+                                    (prev.totalOrders > current.totalOrders) ? prev : current, 
+                                    { totalOrders: 0, date: 'N/A' }
+                                );
+                                
+                                // Calculate growth rate (compare with previous period if we have enough data)
+                                const growthRate = dailyData.length >= 2 ? 
+                                    ((dailyData[dailyData.length - 1].totalOrders - dailyData[0].totalOrders) / dailyData[0].totalOrders * 100) : 0;
+                                
+                                // Format highest volume day date
+                                const formatDate = (dateStr: string) => {
+                                    if (dateStr === 'N/A') return 'N/A';
+                                    const [day, month, year] = dateStr.split('/');
+                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                    return date.toLocaleDateString('en-US', { weekday: 'long' });
+                                };
+
+                                return (
+                                    <>
+                                        <MetricCard sx={{ flex: 1 }}>
+                                            <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                                <Box sx={{ 
+                                                    width: 48, 
+                                                    height: 48, 
+                                                    borderRadius: '50%', 
+                                                    bgcolor: alpha('#1976d2', 0.1),
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    margin: '0 auto 16px auto'
+                                                }}>
+                                                    <TrendingUpIcon sx={{ color: '#1976d2', fontSize: 24 }} />
+                                                </Box>
+                                                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
+                                                    {avgOrdersPerDay}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                                                    Average Orders Per Day
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ 
+                                                    color: '#10b981', 
+                                                    fontWeight: 'bold',
+                                                    bgcolor: alpha('#10b981', 0.1),
+                                                    px: 1,
+                                                    py: 0.5,
+                                                    borderRadius: 1,
+                                                    mt: 1,
+                                                    display: 'inline-block'
+                                                }}>
+                                                    {dailyData.length} day{dailyData.length !== 1 ? 's' : ''} selected
+                                                </Typography>
+                                            </CardContent>
+                                        </MetricCard>
+                                        
+                                        <MetricCard sx={{ flex: 1 }}>
+                                            <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                                <Box sx={{ 
+                                                    width: 48, 
+                                                    height: 48, 
+                                                    borderRadius: '50%', 
+                                                    bgcolor: alpha('#2e7d32', 0.1),
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    margin: '0 auto 16px auto'
+                                                }}>
+                                                    <RestaurantIcon sx={{ color: '#2e7d32', fontSize: 24 }} />
+                                                </Box>
+                                                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2e7d32', mb: 1 }}>
+                                                    {formatDate(highestVolumeDay.date)}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                                                    Highest Volume Day
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ 
+                                                    color: '#2e7d32', 
+                                                    fontWeight: 'bold',
+                                                    bgcolor: alpha('#2e7d32', 0.1),
+                                                    px: 1,
+                                                    py: 0.5,
+                                                    borderRadius: 1,
+                                                    mt: 1,
+                                                    display: 'inline-block'
+                                                }}>
+                                                    {highestVolumeDay.totalOrders} orders
+                                                </Typography>
+                                            </CardContent>
+                                        </MetricCard>
+                                        
+                                        <MetricCard sx={{ flex: 1 }}>
+                                            <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                                <Box sx={{ 
+                                                    width: 48, 
+                                                    height: 48, 
+                                                    borderRadius: '50%', 
+                                                    bgcolor: alpha('#ed6c02', 0.1),
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    margin: '0 auto 16px auto'
+                                                }}>
+                                                    <AnalyticsIcon sx={{ color: '#ed6c02', fontSize: 24 }} />
+                                                </Box>
+                                                <Typography variant="h5" sx={{ 
+                                                    fontWeight: 'bold', 
+                                                    color: growthRate >= 0 ? '#ed6c02' : '#dc2626', 
+                                                    mb: 1 
+                                                }}>
+                                                    {growthRate >= 0 ? '+' : ''}{growthRate.toFixed(1)}%
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                                                    {dailyData.length >= 2 ? 'Period Growth Rate' : 'Revenue per Order'}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ 
+                                                    color: dailyData.length >= 2 ? 
+                                                           (growthRate >= 0 ? '#10b981' : '#dc2626') : '#6b7280',
+                                                    fontWeight: 'bold',
+                                                    bgcolor: dailyData.length >= 2 ? 
+                                                             (growthRate >= 0 ? alpha('#10b981', 0.1) : alpha('#dc2626', 0.1)) : 
+                                                             alpha('#6b7280', 0.1),
+                                                    px: 1,
+                                                    py: 0.5,
+                                                    borderRadius: 1,
+                                                    mt: 1,
+                                                    display: 'inline-block'
+                                                }}>
+                                                    {dailyData.length >= 2 ? 
+                                                     (growthRate >= 0 ? 'Increasing' : 'Decreasing') : 
+                                                     `RM ${summary.total_orders > 0 ? (summary.total_revenue / summary.total_orders).toFixed(2) : '0.00'}`}
+                                                </Typography>
+                                            </CardContent>
+                                        </MetricCard>
+                                    </>
+                                );
+                            })()}
                         </Box>
                     </StyledPaper>
                 </Grid>
