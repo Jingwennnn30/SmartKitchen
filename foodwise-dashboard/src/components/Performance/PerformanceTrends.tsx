@@ -132,24 +132,10 @@ const PerformanceTrends: React.FC = () => {
         loadPerformanceData();
     }, [selectedRange.startDate, selectedRange.endDate]);
     
-    // Load data initially with default range
+    // Load data initially - start with showing all available data
     useEffect(() => {
-        if (selectedDates.length === 0) {
-            // Set initial date selection to current date range
-            const today = new Date();
-            const threeDaysAgo = new Date(today);
-            threeDaysAgo.setDate(today.getDate() - 3);
-            
-            const startDateStr = `${threeDaysAgo.getFullYear()}-${(threeDaysAgo.getMonth() + 1).toString().padStart(2, '0')}-${threeDaysAgo.getDate().toString().padStart(2, '0')}`;
-            const endDateStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-            
-            // Only set if we're in September or October 2025
-            if (today.getFullYear() === 2025 && (today.getMonth() === 8 || today.getMonth() === 9)) {
-                setStartDate(startDateStr);
-                setEndDate(endDateStr);
-                setSelectedDates(getDateRange(startDateStr, endDateStr));
-            }
-        }
+        // Load initial data without selecting specific dates
+        loadPerformanceData();
     }, []);
     
     // Generate calendar days for current month
@@ -297,40 +283,59 @@ const PerformanceTrends: React.FC = () => {
 
     // Get daily breakdown data from API
     const dailyBreakdown = data?.daily_breakdown || {};
-    const summary = data?.summary;
+    const apiSummary = data?.summary;
     
     // Convert daily breakdown to array format for table display
-    const dailyData = selectedDates.length === 0 ? [] : 
-                     Object.entries(dailyBreakdown)
-                        .filter(([date]) => {
-                            // Convert date (format: "5/9/2025") to match selectedDates format ("2025-09-05")
-                            const [day, month, year] = date.split('/');
-                            const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            const isIncluded = selectedDates.includes(formattedDate);
-                            console.log(`Checking date: ${date} -> ${formattedDate}, selected dates:`, selectedDates, 'included:', isIncluded);
-                            return isIncluded;
-                        })
-                        .map(([date, stats]) => {
-                            // Parse date to determine if it's weekend/special event
-                            const [day, month, year] = date.split('/');
-                            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                            const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-                            
-                            // Find if this date has special events from the raw items
-                            const dayItems = data?.items?.filter(item => item.date === date) || [];
-                            const isSpecialEvent = dayItems.some(item => item.is_special_event === "TRUE" || item.is_special_event === true);
-                            const isHoliday = dayItems.some(item => item.is_holiday === "TRUE" || item.is_holiday === true);
-                            
-                            return {
-                                date,
-                                totalOrders: stats.orders,
-                                totalRevenue: stats.revenue.toFixed(2),
-                                isWeekend,
-                                isHoliday,
-                                isSpecialEvent,
-                                status: stats.orders >= 600 ? 'high' : stats.orders >= 400 ? 'medium' : 'low'
-                            };
-                        });
+    const allDailyData = Object.entries(dailyBreakdown).map(([date, stats]) => {
+        // Parse date to determine if it's weekend/special event
+        const [day, month, year] = date.split('/');
+        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+        
+        // Find if this date has special events from the raw items
+        const dayItems = data?.items?.filter(item => item.date === date) || [];
+        const isSpecialEvent = dayItems.some(item => item.is_special_event === "TRUE" || item.is_special_event === true);
+        const isHoliday = dayItems.some(item => item.is_holiday === "TRUE" || item.is_holiday === true);
+        
+        return {
+            date,
+            totalOrders: stats.orders,
+            totalRevenue: parseFloat(stats.revenue.toFixed(2)),
+            isWeekend,
+            isHoliday,
+            isSpecialEvent,
+            status: stats.orders >= 600 ? 'high' : stats.orders >= 400 ? 'medium' : 'low'
+        };
+    });
+
+    // Filter data based on selected dates
+    const dailyData = allDailyData.filter(row => {
+        // If no dates are selected, show all data
+        if (selectedDates.length === 0) {
+            return true;
+        }
+        
+        // Convert date (format: "5/9/2025") to match selectedDates format ("2025-09-05")
+        const [day, month, year] = row.date.split('/');
+        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        const isIncluded = selectedDates.includes(formattedDate);
+        console.log(`Checking date: ${row.date} -> ${formattedDate}, selected dates:`, selectedDates, 'included:', isIncluded);
+        return isIncluded;
+    });
+
+    // Calculate summary from filtered data (this will match the table)
+    const summary = {
+        total_orders: dailyData.reduce((sum, day) => sum + day.totalOrders, 0),
+        total_revenue: dailyData.reduce((sum, day) => sum + day.totalRevenue, 0),
+        avg_table_size: apiSummary?.avg_table_size || 0 // Keep the original avg table size
+    };
+
+    // Debug logging
+    console.log('Selected dates:', selectedDates);
+    console.log('All daily data:', allDailyData);
+    console.log('Filtered daily data:', dailyData);
+    console.log('Calculated summary:', summary);
+    console.log('API summary:', apiSummary);
 
     return (
         <Box sx={{ 
@@ -449,7 +454,7 @@ const PerformanceTrends: React.FC = () => {
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#6b7280', display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <AnalyticsIcon sx={{ fontSize: 16 }} />
-                                    {selectedDates.length === 0 ? 'Select dates from calendar to view analysis' : 
+                                    {selectedDates.length === 0 ? `Daily analysis for all available dates (${selectedRange.startDate} - ${selectedRange.endDate})` : 
                                      selectedDates.length === 1 ? `Analysis for ${new Date(selectedDates[0]).toLocaleDateString()}` :
                                      startDate && endDate ? `Date range: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}` :
                                      `Analysis for ${selectedDates.length} selected dates`}
@@ -699,10 +704,10 @@ const PerformanceTrends: React.FC = () => {
                                             color: '#6b7280'
                                         }}>
                                             {loading ? 'Loading data from Lambda API...' :
-                                             selectedDates.length === 0 ? 'Please select a date range from the calendar to view order data' : 
-                                             selectedDates.length === 1 ? 'Showing data for selected date' :
-                                             startDate && endDate ? `Showing data from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${selectedDates.length} days)` :
-                                             `Showing data for ${selectedDates.length} selected dates`}
+                                             selectedDates.length === 0 ? `Showing all available data (${dailyData.length} days)` : 
+                                             selectedDates.length === 1 ? `Showing data for selected date (${dailyData.length} ${dailyData.length === 1 ? 'day' : 'days'} found)` :
+                                             startDate && endDate ? `Showing data from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${dailyData.length} of ${selectedDates.length} days found)` :
+                                             `Showing data for ${selectedDates.length} selected dates (${dailyData.length} days found)`}
                                         </Typography>
                                         {loading && (
                                             <Button
@@ -815,10 +820,12 @@ const PerformanceTrends: React.FC = () => {
                                                             }}>
                                                                 <CalendarTodayIcon sx={{ fontSize: 48, color: '#d1d5db' }} />
                                                                 <Typography variant="h6" sx={{ color: '#374151' }}>
-                                                                    No dates selected
+                                                                    {selectedDates.length === 0 ? 'No data available' : 'No data found for selected dates'}
                                                                 </Typography>
                                                                 <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                                                                    Please select one or more dates from the calendar to view order data
+                                                                    {selectedDates.length === 0 
+                                                                        ? 'No sales data available in the current date range' 
+                                                                        : `No sales data found for the selected ${selectedDates.length === 1 ? 'date' : 'dates'}. Try selecting different dates.`}
                                                                 </Typography>
                                                             </Box>
                                                         </TableCell>
@@ -930,7 +937,7 @@ const PerformanceTrends: React.FC = () => {
                                                                         color: '#16a34a',
                                                                         fontSize: '1rem'
                                                                     }}>
-                                                                        RM {row.totalRevenue}
+                                                                        RM {row.totalRevenue.toFixed(2)}
                                                                     </Typography>
                                                                 </Box>
                                                             </TableCell>
