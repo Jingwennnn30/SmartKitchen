@@ -181,7 +181,9 @@ const PerformanceTrends: React.FC = () => {
         console.log('Exporting to PDF...');
     };
 
-    const [selectedDate, setSelectedDate] = useState('2025-10-06'); // Default to today
+    const [selectedDates, setSelectedDates] = useState<string[]>([]); // Start with no selection
+    const [startDate, setStartDate] = useState<string | null>(null);
+    const [endDate, setEndDate] = useState<string | null>(null);
     const [currentMonth, setCurrentMonth] = useState(10); // Start with October
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
@@ -203,44 +205,146 @@ const PerformanceTrends: React.FC = () => {
         for (let day = 1; day <= daysInMonth; day++) {
             const date = `${year}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
             const isAfterHackathon = currentMonth === 10 && day > 12; // Disable dates after Oct 12
+            const isSelected = selectedDates.includes(date);
+            const isStartDate = date === startDate;
+            const isEndDate = date === endDate;
+            const isInRange = selectedDates.includes(date) && !isStartDate && !isEndDate;
+            
+            // Determine if date is selectable based on current selection state
+            let isSelectable = !isAfterHackathon;
+            if (startDate && !endDate && !isStartDate) {
+                // If we have a start date but no end date, only allow dates after start date
+                const currentDate = new Date(date);
+                const startDateObj = new Date(startDate);
+                isSelectable = currentDate >= startDateObj && !isAfterHackathon;
+            }
             
             days.push({
                 day,
                 date,
                 isToday: date === '2025-10-06',
-                isSelected: date === selectedDate,
-                isDisabled: isAfterHackathon
+                isSelected,
+                isStartDate,
+                isEndDate,
+                isInRange,
+                isDisabled: isAfterHackathon,
+                isSelectable
             });
         }
         
         return days;
     };
 
-    const handleViewOrderDetails = (hour: string) => {
-        setSelectedTimeSlot(hour);
-        setOrderDetails(generateOrderDetails(hour, selectedDate));
+    const handleDateSelection = (date: string) => {
+        // If clicking on the same start date, unselect everything
+        if (startDate === date && !endDate) {
+            setStartDate(null);
+            setEndDate(null);
+            setSelectedDates([]);
+            return;
+        }
+        
+        // If clicking on the same end date, reset to just start date
+        if (endDate === date && startDate) {
+            setEndDate(null);
+            setSelectedDates([startDate]);
+            return;
+        }
+        
+        if (!startDate || (startDate && endDate)) {
+            // First click or reset selection - set as start date
+            setStartDate(date);
+            setEndDate(null);
+            setSelectedDates([date]);
+        } else if (startDate && !endDate) {
+            // Second click - validate that end date is after start date
+            const start = new Date(startDate);
+            const end = new Date(date);
+            
+            if (end < start) {
+                // If end date is before start date, show error or ignore
+                // For now, we'll ignore clicks on dates before the start date
+                return;
+            } else if (end.getTime() === start.getTime()) {
+                // If same date, unselect
+                setStartDate(null);
+                setEndDate(null);
+                setSelectedDates([]);
+            } else {
+                // Valid end date - create range
+                setEndDate(date);
+                setSelectedDates(getDateRange(startDate, date));
+            }
+        }
+    };
+
+    const getDateRange = (start: string, end: string): string[] => {
+        const dates = [];
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+            dates.push(dateStr);
+        }
+        return dates;
+    };
+
+    const handleViewOrderDetails = (date: string) => {
+        setSelectedTimeSlot(date);
+        setOrderDetails(generateOrderDetails('12:00', date)); // Use noon as default time
         setDialogOpen(true);
     };
 
-    // Generate hourly data for selected date
-    const generateHourlyData = (date: string) => {
-        const hours = [];
-        for (let hour = 10; hour <= 22; hour++) {
-            const isPeakHour = hour >= 12 && hour <= 14;
-            const baseValue = isPeakHour ? 35 : 15;
-            const variation = isPeakHour ? 20 : 15;
-            const orders = Math.floor(Math.random() * variation) + baseValue;
-            
-            hours.push({
-                hour: `${hour.toString().padStart(2, '0')}:00`,
-                orders,
-                status: orders >= 40 ? 'high' : orders >= 25 ? 'medium' : 'low'
-            });
-        }
-        return hours;
+    // Generate daily order data based on database schema
+    const generateDailyOrderData = () => {
+        const dailyData: any[] = [];
+        
+        // Generate data for September and October 2025
+        const months = [
+            { month: 9, days: 30 }, // September
+            { month: 10, days: 31 } // October
+        ];
+        
+        months.forEach(({ month, days }) => {
+            for (let day = 1; day <= days; day++) {
+                const dateStr = `${day}/${month}/2025`;
+                const date = new Date(2025, month - 1, day);
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const isHoliday = false; // For now, no holidays
+                const isSpecialEvent = day % 7 === 0; // Every 7th day is a special event
+                
+                // Calculate totals based on multiple dishes sold that day
+                const totalOrders = Math.floor(Math.random() * 50) + (isWeekend ? 80 : 120);
+                const avgPrice = 15 + Math.random() * 10; // Average price between 15-25
+                const totalRevenue = totalOrders * avgPrice;
+                
+                dailyData.push({
+                    date: dateStr,
+                    totalOrders,
+                    totalRevenue: totalRevenue.toFixed(2),
+                    avgTableSize: (2 + Math.random() * 2).toFixed(1), // 2-4 people average
+                    dailyCustomers: totalOrders * 2.5, // Approximate customers based on orders
+                    isWeekend,
+                    isHoliday,
+                    isSpecialEvent,
+                    status: totalOrders >= 150 ? 'high' : totalOrders >= 100 ? 'medium' : 'low'
+                });
+            }
+        });
+        return dailyData;
     };
 
-    const hourlyData = generateHourlyData(selectedDate);
+    const allDailyData = generateDailyOrderData();
+    
+    // Filter data to show only selected dates
+    const dailyData = selectedDates.length === 0 ? [] : 
+                     allDailyData.filter(row => {
+                         // Convert row.date (format: "14/10/2025") to match selectedDates format ("2025-10-14")
+                         const [day, month, year] = row.date.split('/');
+                         const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                         return selectedDates.includes(formattedDate);
+                     });
 
     return (
         <Box sx={{ 
@@ -366,7 +470,10 @@ const PerformanceTrends: React.FC = () => {
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#6b7280', display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <AnalyticsIcon sx={{ fontSize: 16 }} />
-                                    Daily analysis across operational hours ({selectedDate})
+                                    {selectedDates.length === 0 ? 'Select dates from calendar to view analysis' : 
+                                     selectedDates.length === 1 ? `Analysis for ${new Date(selectedDates[0]).toLocaleDateString()}` :
+                                     startDate && endDate ? `Date range: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}` :
+                                     `Analysis for ${selectedDates.length} selected dates`}
                                 </Typography>
                             </Box>
                         </Box>
@@ -381,11 +488,56 @@ const PerformanceTrends: React.FC = () => {
                                     border: '1px solid #e5e7eb',
                                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                                 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                                        <CalendarTodayIcon sx={{ fontSize: 20, color: '#3b82f6' }} />
-                                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
-                                            Select Date
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <CalendarTodayIcon sx={{ fontSize: 20, color: '#3b82f6' }} />
+                                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                                Select Dates
+                                            </Typography>
+                                        </Box>
+                                        {selectedDates.length > 0 && (
+                                            <Button
+                                                size="small"
+                                                onClick={() => {
+                                                    setSelectedDates([]);
+                                                    setStartDate(null);
+                                                    setEndDate(null);
+                                                }}
+                                                sx={{
+                                                    color: '#dc2626',
+                                                    fontSize: '0.75rem',
+                                                    textTransform: 'none',
+                                                    minWidth: 'auto',
+                                                    p: 0.5,
+                                                    '&:hover': {
+                                                        bgcolor: '#fee2e2'
+                                                    }
+                                                }}
+                                            >
+                                                Clear ({selectedDates.length})
+                                            </Button>
+                                        )}
+                                    </Box>
+                                    
+                                    {/* Instructions */}
+                                    <Box sx={{ mb: 2, p: 2, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mb: 1 }}>
+                                            📅 How to select dates:
                                         </Typography>
+                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', fontSize: '0.7rem' }}>
+                                            • Click a date to select start date
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', fontSize: '0.7rem' }}>
+                                            • Click another date after start to create range
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', fontSize: '0.7rem' }}>
+                                            • Click same date again to unselect
+                                        </Typography>
+                                        {startDate && !endDate && (
+                                            <Typography variant="caption" sx={{ color: '#059669', display: 'block', fontSize: '0.7rem', fontWeight: 'bold', mt: 1 }}>
+                                                ✓ Start: {new Date(startDate).toLocaleDateString()} - Select end date
+                                            </Typography>
+                                        )}
                                     </Box>
                                     
                                     {/* Calendar Month Display */}
@@ -472,30 +624,56 @@ const PerformanceTrends: React.FC = () => {
                                                     {dayData && (
                                                         <Button
                                                             size="small"
-                                                            disabled={dayData.isDisabled}
-                                                            onClick={() => !dayData.isDisabled && setSelectedDate(dayData.date)}
+                                                            disabled={dayData.isDisabled || !dayData.isSelectable}
+                                                            onClick={() => dayData.isSelectable && handleDateSelection(dayData.date)}
                                                             sx={{
                                                                 minWidth: 0,
                                                                 width: '100%',
                                                                 height: '100%',
                                                                 fontSize: '0.8rem',
-                                                                borderRadius: '8px',
-                                                                fontWeight: dayData.isSelected || dayData.isToday ? 'bold' : 'medium',
-                                                                bgcolor: dayData.isDisabled ? '#f3f4f6' :
-                                                                        dayData.isSelected ? '#3b82f6' : 
+                                                                borderRadius: dayData.isInRange ? '2px' : '8px',
+                                                                fontWeight: dayData.isStartDate || dayData.isEndDate || dayData.isToday ? 'bold' : 'medium',
+                                                                bgcolor: (dayData.isDisabled || !dayData.isSelectable) ? '#f3f4f6' :
+                                                                        dayData.isStartDate ? '#10b981' : 
+                                                                        dayData.isEndDate ? '#10b981' :
+                                                                        dayData.isInRange ? '#d1fae5' :
                                                                         dayData.isToday ? '#dbeafe' : 
                                                                         'transparent',
-                                                                color: dayData.isDisabled ? '#9ca3af' :
-                                                                       dayData.isSelected ? 'white' : 
+                                                                color: (dayData.isDisabled || !dayData.isSelectable) ? '#9ca3af' :
+                                                                       (dayData.isStartDate || dayData.isEndDate) ? 'white' : 
+                                                                       dayData.isInRange ? '#059669' :
                                                                        dayData.isToday ? '#1d4ed8' : '#374151',
-                                                                border: dayData.isToday && !dayData.isSelected ? '2px solid #3b82f6' : 'none',
+                                                                border: dayData.isToday && !dayData.isStartDate && !dayData.isEndDate ? '2px solid #3b82f6' : 
+                                                                        (dayData.isStartDate || dayData.isEndDate) ? '2px solid #059669' : 'none',
+                                                                position: 'relative',
+                                                                '&::before': dayData.isStartDate && endDate ? {
+                                                                    content: '""',
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    right: '-2px',
+                                                                    bottom: 0,
+                                                                    width: '4px',
+                                                                    bgcolor: '#d1fae5'
+                                                                } : {},
+                                                                '&::after': dayData.isEndDate && startDate ? {
+                                                                    content: '""',
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: '-2px',
+                                                                    bottom: 0,
+                                                                    width: '4px',
+                                                                    bgcolor: '#d1fae5'
+                                                                } : {},
                                                                 '&:hover': {
-                                                                    bgcolor: dayData.isDisabled ? '#f3f4f6' :
-                                                                            dayData.isSelected ? '#2563eb' : '#f0f9ff',
-                                                                    transform: dayData.isDisabled ? 'none' : 'scale(1.05)'
+                                                                    bgcolor: (dayData.isDisabled || !dayData.isSelectable) ? '#f3f4f6' :
+                                                                            (dayData.isStartDate || dayData.isEndDate) ? '#059669' : 
+                                                                            dayData.isInRange ? '#bbf7d0' :
+                                                                            '#f0f9ff',
+                                                                    transform: (dayData.isDisabled || !dayData.isSelectable) ? 'none' : 'scale(1.05)'
                                                                 },
                                                                 '&:disabled': {
-                                                                    cursor: 'not-allowed'
+                                                                    cursor: 'not-allowed',
+                                                                    opacity: dayData.isSelectable ? 0.3 : 0.6
                                                                 },
                                                                 transition: 'all 0.2s ease'
                                                             }}
@@ -536,11 +714,10 @@ const PerformanceTrends: React.FC = () => {
                                         <Typography variant="body2" sx={{ 
                                             color: '#6b7280'
                                         }}>
-                                            Hourly breakdown for {new Date(selectedDate).toLocaleDateString('en-US', { 
-                                                weekday: 'long', 
-                                                month: 'long', 
-                                                day: 'numeric' 
-                                            })}
+                                            {selectedDates.length === 0 ? 'Please select a date range from the calendar to view order data' : 
+                                             selectedDates.length === 1 ? 'Showing data for selected date' :
+                                             startDate && endDate ? `Showing data from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${selectedDates.length} days)` :
+                                             `Showing data for ${selectedDates.length} selected dates`}
                                         </Typography>
                                     </Box>
 
@@ -565,7 +742,7 @@ const PerformanceTrends: React.FC = () => {
                                                             borderBottom: '2px solid #d1d5db'
                                                         }}
                                                     >
-                                                        Time Slot
+                                                        Date
                                                     </TableCell>
                                                     <TableCell 
                                                         align="center"
@@ -578,7 +755,7 @@ const PerformanceTrends: React.FC = () => {
                                                             borderBottom: '2px solid #d1d5db'
                                                         }}
                                                     >
-                                                        Orders
+                                                        Total Orders
                                                     </TableCell>
                                                     <TableCell 
                                                         align="center"
@@ -591,7 +768,7 @@ const PerformanceTrends: React.FC = () => {
                                                             borderBottom: '2px solid #d1d5db'
                                                         }}
                                                     >
-                                                        Status
+                                                        Revenue (RM)
                                                     </TableCell>
                                                     <TableCell 
                                                         align="center"
@@ -609,40 +786,58 @@ const PerformanceTrends: React.FC = () => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {hourlyData.map((row, index) => {
-                                                    // Check if selected date is after Oct 12 (no data)
-                                                    const selectedDateObj = new Date(selectedDate);
-                                                    const isAfterHackathon = selectedDateObj.getMonth() === 9 && selectedDateObj.getDate() > 12;
-                                                    const isPeakHour = row.hour >= '12:00' && row.hour <= '14:00';
+                                                {dailyData.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                                                            <Box sx={{ 
+                                                                display: 'flex', 
+                                                                flexDirection: 'column', 
+                                                                alignItems: 'center', 
+                                                                gap: 2,
+                                                                color: '#6b7280'
+                                                            }}>
+                                                                <CalendarTodayIcon sx={{ fontSize: 48, color: '#d1d5db' }} />
+                                                                <Typography variant="h6" sx={{ color: '#374151' }}>
+                                                                    No dates selected
+                                                                </Typography>
+                                                                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                                                    Please select one or more dates from the calendar to view order data
+                                                                </Typography>
+                                                            </Box>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    dailyData.map((row, index) => {
+                                                    const isHighActivity = row.status === 'high';
+                                                    const isSpecialEvent = row.isSpecialEvent;
+                                                    const isWeekend = row.isWeekend;
                                                     
                                                     return (
                                                         <TableRow
-                                                            key={row.hour}
+                                                            key={row.date}
                                                             sx={{
-                                                                bgcolor: isAfterHackathon ? '#f8f9fa' :
-                                                                        isPeakHour ? '#eff6ff' : 'white',
-                                                                opacity: isAfterHackathon ? 0.6 : 1,
+                                                                bgcolor: isSpecialEvent ? '#eff6ff' : 
+                                                                        isWeekend ? '#fef7e0' : 'white',
                                                                 '&:hover': {
-                                                                    bgcolor: isAfterHackathon ? '#f3f4f6' :
-                                                                             isPeakHour ? '#dbeafe' : '#f9fafb',
+                                                                    bgcolor: isSpecialEvent ? '#dbeafe' : 
+                                                                             isWeekend ? '#fef3c7' : '#f9fafb',
                                                                 },
                                                                 transition: 'background-color 0.2s ease'
                                                             }}
                                                         >
-                                                            {/* Time Slot Column */}
+                                                            {/* Date Column */}
                                                             <TableCell align="center" sx={{ py: 2 }}>
                                                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                                                                     <Typography variant="h6" sx={{ 
                                                                         fontWeight: 'bold',
-                                                                        color: isAfterHackathon ? '#9ca3af' :
-                                                                               isPeakHour ? '#1d4ed8' : '#374151',
+                                                                        color: isSpecialEvent ? '#1d4ed8' : '#374151',
                                                                         fontSize: '1rem'
                                                                     }}>
-                                                                        {row.hour}
+                                                                        {row.date}
                                                                     </Typography>
-                                                                    {isPeakHour && !isAfterHackathon && (
+                                                                    {isSpecialEvent && (
                                                                         <Chip 
-                                                                            label="🔥 Peak" 
+                                                                            label="🎉 Event" 
                                                                             size="small" 
                                                                             sx={{ 
                                                                                 bgcolor: '#fef3c7',
@@ -653,89 +848,74 @@ const PerformanceTrends: React.FC = () => {
                                                                             }} 
                                                                         />
                                                                     )}
+                                                                    {isWeekend && !isSpecialEvent && (
+                                                                        <Chip 
+                                                                            label="📅 Weekend" 
+                                                                            size="small" 
+                                                                            sx={{ 
+                                                                                bgcolor: '#e0f2fe',
+                                                                                color: '#0369a1',
+                                                                                fontSize: '0.65rem',
+                                                                                height: 18,
+                                                                                fontWeight: 'bold'
+                                                                            }} 
+                                                                        />
+                                                                    )}
                                                                 </Box>
                                                             </TableCell>
 
-                                                            {/* Orders Column */}
+                                                            {/* Total Orders Column */}
                                                             <TableCell align="center" sx={{ py: 2 }}>
-                                                                {isAfterHackathon ? (
-                                                                    <Box sx={{ 
-                                                                        display: 'inline-flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1,
-                                                                        px: 2,
-                                                                        py: 1,
-                                                                        borderRadius: '8px',
-                                                                        bgcolor: '#f3f4f6',
-                                                                        border: '1px dashed #d1d5db'
+                                                                <Box sx={{ 
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 1,
+                                                                    px: 2,
+                                                                    py: 1,
+                                                                    borderRadius: '8px',
+                                                                    bgcolor: row.status === 'high' ? '#fef2f2' :
+                                                                            row.status === 'medium' ? '#fefbf2' : '#f0fdf4',
+                                                                    border: `1px solid ${row.status === 'high' ? '#fecaca' :
+                                                                                         row.status === 'medium' ? '#fed7aa' : '#bbf7d0'}`
+                                                                }}>
+                                                                    <Typography variant="h6" sx={{ 
+                                                                        fontWeight: 'bold',
+                                                                        color: row.status === 'high' ? '#dc2626' :
+                                                                               row.status === 'medium' ? '#d97706' : '#16a34a',
+                                                                        fontSize: '1.1rem'
                                                                     }}>
-                                                                        <Typography variant="body2" sx={{ 
-                                                                            color: '#9ca3af',
-                                                                            fontStyle: 'italic'
-                                                                        }}>
-                                                                            No data
-                                                                        </Typography>
-                                                                    </Box>
-                                                                ) : (
-                                                                    <Box sx={{ 
-                                                                        display: 'inline-flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1,
-                                                                        px: 2,
-                                                                        py: 1,
-                                                                        borderRadius: '8px',
-                                                                        bgcolor: row.status === 'high' ? '#fef2f2' :
-                                                                                row.status === 'medium' ? '#fefbf2' : '#f0fdf4',
-                                                                        border: `1px solid ${row.status === 'high' ? '#fecaca' :
-                                                                                             row.status === 'medium' ? '#fed7aa' : '#bbf7d0'}`
+                                                                        {row.totalOrders}
+                                                                    </Typography>
+                                                                    <Typography variant="caption" sx={{ 
+                                                                        color: row.status === 'high' ? '#dc2626' :
+                                                                               row.status === 'medium' ? '#d97706' : '#16a34a',
+                                                                        fontWeight: 'medium'
                                                                     }}>
-                                                                        <Typography variant="h6" sx={{ 
-                                                                            fontWeight: 'bold',
-                                                                            color: row.status === 'high' ? '#dc2626' :
-                                                                                   row.status === 'medium' ? '#d97706' : '#16a34a',
-                                                                            fontSize: '1.1rem'
-                                                                        }}>
-                                                                            {row.orders}
-                                                                        </Typography>
-                                                                        <Typography variant="caption" sx={{ 
-                                                                            color: row.status === 'high' ? '#dc2626' :
-                                                                                   row.status === 'medium' ? '#d97706' : '#16a34a',
-                                                                            fontWeight: 'medium'
-                                                                        }}>
-                                                                            orders
-                                                                        </Typography>
-                                                                    </Box>
-                                                                )}
+                                                                        orders
+                                                                    </Typography>
+                                                                </Box>
                                                             </TableCell>
 
-                                                            {/* Status Column */}
+                                                            {/* Revenue Column */}
                                                             <TableCell align="center" sx={{ py: 2 }}>
-                                                                {isAfterHackathon ? (
-                                                                    <Chip
-                                                                        label="No Data"
-                                                                        size="medium"
-                                                                        sx={{
-                                                                            bgcolor: '#f3f4f6',
-                                                                            color: '#9ca3af',
-                                                                            fontWeight: 'medium',
-                                                                            px: 2
-                                                                        }}
-                                                                    />
-                                                                ) : (
-                                                                    <Chip
-                                                                        label={`● ${row.status === 'high' ? 'High Activity' : 
-                                                                                   row.status === 'medium' ? 'Medium Activity' : 'Low Activity'}`}
-                                                                        size="medium"
-                                                                        sx={{
-                                                                            bgcolor: row.status === 'high' ? '#dc2626' :
-                                                                                    row.status === 'medium' ? '#f59e0b' : '#16a34a',
-                                                                            color: 'white',
-                                                                            fontWeight: 'bold',
-                                                                            px: 2,
-                                                                            minWidth: 120
-                                                                        }}
-                                                                    />
-                                                                )}
+                                                                <Box sx={{ 
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 1,
+                                                                    px: 2,
+                                                                    py: 1,
+                                                                    borderRadius: '8px',
+                                                                    bgcolor: '#f0fdf4',
+                                                                    border: '1px solid #bbf7d0'
+                                                                }}>
+                                                                    <Typography variant="h6" sx={{ 
+                                                                        fontWeight: 'bold',
+                                                                        color: '#16a34a',
+                                                                        fontSize: '1rem'
+                                                                    }}>
+                                                                        RM {row.totalRevenue}
+                                                                    </Typography>
+                                                                </Box>
                                                             </TableCell>
 
                                                             {/* Action Column */}
@@ -743,19 +923,15 @@ const PerformanceTrends: React.FC = () => {
                                                                 <Button
                                                                     variant="contained"
                                                                     size="medium"
-                                                                    disabled={isAfterHackathon}
-                                                                    onClick={() => !isAfterHackathon && handleViewOrderDetails(row.hour)}
+                                                                    onClick={() => handleViewOrderDetails(row.date)}
                                                                     startIcon={<VisibilityIcon />}
                                                                     sx={{
-                                                                        bgcolor: isAfterHackathon ? '#f3f4f6' : '#3b82f6',
-                                                                        color: isAfterHackathon ? '#9ca3af' : 'white',
+                                                                        bgcolor: '#3b82f6',
+                                                                        color: 'white',
                                                                         '&:hover': {
-                                                                            bgcolor: isAfterHackathon ? '#f3f4f6' : '#2563eb',
+                                                                            bgcolor: '#2563eb',
                                                                             transform: 'translateY(-1px)',
                                                                             boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                                                        },
-                                                                        '&:disabled': {
-                                                                            cursor: 'not-allowed'
                                                                         },
                                                                         minWidth: 100,
                                                                         textTransform: 'none',
@@ -769,7 +945,7 @@ const PerformanceTrends: React.FC = () => {
                                                             </TableCell>
                                                         </TableRow>
                                                     );
-                                                })}
+                                                }))}
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
@@ -978,7 +1154,7 @@ const PerformanceTrends: React.FC = () => {
                             Order Details - {selectedTimeSlot}
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                            {selectedDate} • {orderDetails.length} menu items
+                            {selectedTimeSlot} • {orderDetails.length} menu items
                         </Typography>
                     </Box>
                     <IconButton onClick={() => setDialogOpen(false)} size="small">
