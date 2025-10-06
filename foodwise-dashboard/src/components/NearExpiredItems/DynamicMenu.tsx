@@ -17,7 +17,6 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LocalDiningIcon from '@mui/icons-material/LocalDining';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface DynamicMenuProps {
     items?: MenuItem[]; // Made optional since we'll fetch from API
