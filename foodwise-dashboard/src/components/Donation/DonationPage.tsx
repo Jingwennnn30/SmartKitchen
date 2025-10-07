@@ -387,20 +387,35 @@ const DonationPage: React.FC<DonationPageProps> = () => {
                 </Grid>
             </Grid>
 
-            {/* Selected Items Table */}
-            <StatsCard sx={{ mb: 4, padding: 3 }}>
-                <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ 
-                    color: '#2c3e50',
-                    mb: 3 
-                }}>
-                    Selected Items for Donation
-                </Typography>
-                
-                {itemsWithPartners.length === 0 ? (
-                    <Alert severity="info" sx={{ borderRadius: '8px' }}>
-                        No items selected for donation. Please go back to the Near Expired Items page and select items.
-                    </Alert>
-                ) : (
+            {/* Info message when no items selected (direct portal access) */}
+            {itemsWithPartners.length === 0 && (
+                <Alert 
+                    severity="info" 
+                    sx={{ 
+                        mb: 4, 
+                        borderRadius: '8px',
+                        backgroundColor: '#e3f2fd',
+                        border: '1px solid #bbdefb'
+                    }}
+                >
+                    <Typography variant="body2">
+                        <strong>Welcome to Donation Management Portal!</strong><br/>
+                        To donate specific items, please select items from the Near Expired Items page and click "Proceed".
+                        Here you can view donation analytics, partner performance, and overall waste reduction impact.
+                    </Typography>
+                </Alert>
+            )}
+
+            {/* Selected Items Table - Only show when items are selected */}
+            {itemsWithPartners.length > 0 && (
+                <StatsCard sx={{ mb: 4, padding: 3 }}>
+                    <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ 
+                        color: '#2c3e50',
+                        mb: 3 
+                    }}>
+                        Selected Items for Donation
+                    </Typography>
+                    
                     <ModernTable>
                         <Table>
                             <TableHead>
@@ -457,8 +472,8 @@ const DonationPage: React.FC<DonationPageProps> = () => {
                             </TableBody>
                         </Table>
                     </ModernTable>
-                )}
-            </StatsCard>
+                </StatsCard>
+            )}
 
             {/* Analytics Section */}
             <Grid container spacing={3}>

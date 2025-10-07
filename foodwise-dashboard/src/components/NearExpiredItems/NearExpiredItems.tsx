@@ -10,6 +10,7 @@ import {
     TableHead,
     TableRow,
     Checkbox,
+    Skeleton,
     Button,
     Grid,
     CircularProgress,
@@ -23,6 +24,8 @@ import DynamicMenu from './DynamicMenu';
 import DiscountSection from './DiscountSection';
 import CSRReport from './CSRReport';
 import { NearExpiredService, NearExpiredItem } from '../../services/nearExpiredService';
+import { DynamicMenuService, DynamicMenuItem } from '../../services/dynamicMenuService';
+import { DiscountService, DiscountItem } from '../../services/discountService';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -39,6 +42,30 @@ const ProceedButton = styled(Button)(({ theme }) => ({
     '&:hover': {
         backgroundColor: '#45a049',
     },
+}));
+
+const DynamicMenuButton = styled(Button)(({ theme }) => ({
+    backgroundColor: '#2196f3',
+    color: 'white',
+    fontWeight: 'bold',
+    padding: '12px 24px',
+    borderRadius: '8px',
+    '&:hover': {
+        backgroundColor: '#1976d2',
+    },
+    marginRight: '12px',
+}));
+
+const SuggestedDiscountButton = styled(Button)(({ theme }) => ({
+    backgroundColor: '#ff9800',
+    color: 'white',
+    fontWeight: 'bold',
+    padding: '12px 24px',
+    borderRadius: '8px',
+    '&:hover': {
+        backgroundColor: '#f57c00',
+    },
+    marginRight: '12px',
 }));
 
 // Mock data for components
@@ -62,8 +89,16 @@ const NearExpiredItems: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({});
-    
-    // Pagination state
+
+    const [dynamicMenuItems, setDynamicMenuItems] = useState<{ [key: string]: boolean }>({});
+    const [generatedMenu, setGeneratedMenu] = useState<DynamicMenuItem[]>([]);
+    const [menuLoading, setMenuLoading] = useState(false);
+    const [menuError, setMenuError] = useState<string | null>(null);
+
+    const [suggestedDiscounts, setSuggestedDiscounts] = useState<DiscountItem[]>([]);
+    const [discountLoading, setDiscountLoading] = useState(false);
+    const [discountError, setDiscountError] = useState<string | null>(null);
+
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 4;
 
@@ -72,15 +107,14 @@ const NearExpiredItems: React.FC = () => {
             try {
                 setLoading(true);
                 setError(null);
-                
+
                 const data = await NearExpiredService.getNearExpiredItems();
                 setNearExpiredItems(data.items);
                 setScanDate(data.scanDate);
             } catch (err) {
                 console.error('Error fetching near expired items:', err);
                 setError('Failed to load near expired items. Using mock data.');
-                
-                // Fallback to mock data if API fails
+
                 const mockData: NearExpiredItem[] = [
                     {
                         item_id: 1,
@@ -144,10 +178,54 @@ const NearExpiredItems: React.FC = () => {
         }));
     };
 
+    const handleDynamicMenuChange = (itemName: string) => {
+        setDynamicMenuItems(prev => ({
+            ...prev,
+            [itemName]: !prev[itemName]
+        }));
+    };
+
+    const handleGenerateDynamicMenu = async () => {
+        const selectedMenuItems = Object.keys(dynamicMenuItems).filter(key => dynamicMenuItems[key]);
+        if (selectedMenuItems.length === 0) {
+            alert('Please select at least one item for Dynamic Menu generation.');
+            return;
+        }
+
+        try {
+            setMenuLoading(true);
+            setMenuError(null);
+            const response = await DynamicMenuService.generateDynamicMenu(selectedMenuItems);
+            setGeneratedMenu(response.menu);
+            alert(`Dynamic Menu generated successfully! Created ${response.totalDishes} dishes using: ${selectedMenuItems.join(', ')}`);
+        } catch (error) {
+            console.error('Error generating dynamic menu:', error);
+            setMenuError(error instanceof Error ? error.message : 'Failed to generate dynamic menu');
+            alert('Failed to generate dynamic menu. Please try again.');
+        } finally {
+            setMenuLoading(false);
+        }
+    };
+
+    const handleViewSuggestedDiscount = async () => {
+        try {
+            setDiscountLoading(true);
+            setDiscountError(null);
+            const response = await DiscountService.generateSuggestedDiscounts(nearExpiredItems);
+            setSuggestedDiscounts(response);
+            alert(`Generated ${response.length} AI-powered discount suggestions!`);
+        } catch (error) {
+            console.error('Error generating suggested discounts:', error);
+            setDiscountError(error instanceof Error ? error.message : 'Failed to generate suggested discounts');
+            alert('Failed to generate suggested discounts. Please try again.');
+        } finally {
+            setDiscountLoading(false);
+        }
+    };
+
     const handleProceed = () => {
         const selectedItemNames = Object.keys(checkedItems).filter(key => checkedItems[key]);
         if (selectedItemNames.length > 0) {
-            // Create selected items data with details
             const selectedItemsData = selectedItemNames.map(itemName => {
                 const item = nearExpiredItems.find(item => item.item_name === itemName);
                 return {
@@ -158,18 +236,12 @@ const NearExpiredItems: React.FC = () => {
                 };
             });
 
-            // Navigate to donation page with selected items
-            navigate('/donation', { 
-                state: { 
-                    selectedItems: selectedItemsData 
-                } 
-            });
+            navigate('/donation', { state: { selectedItems: selectedItemsData } });
         } else {
             alert('Please select at least one item for donation.');
         }
     };
 
-    // Pagination logic
     const totalPages = Math.ceil(nearExpiredItems.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -179,42 +251,47 @@ const NearExpiredItems: React.FC = () => {
         setCurrentPage(page);
     };
 
-    if (loading) {
-        return (
-            <Box sx={{ padding: 3 }}>
-                <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Near Expired Items
-                </Typography>
-                <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-                    <CircularProgress />
-                    <Typography variant="body2" sx={{ ml: 2 }}>
-                        Loading near expired items...
-                    </Typography>
-                </Box>
-            </Box>
-        );
-    }
-
     return (
         <Box sx={{ padding: 3 }}>
-            <Typography variant="h5" gutterBottom fontWeight="bold">
-                Near Expired Items - Donation Friendly
-            </Typography>
-            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" gutterBottom fontWeight="bold">
+                    Near Expired Items - Donation Friendly
+                </Typography>
+                <Button
+                    variant="outlined"
+                    onClick={() => navigate('/donation')}
+                    sx={{
+                        borderColor: '#4caf50',
+                        color: '#4caf50',
+                        fontWeight: 'bold',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        '&:hover': {
+                            borderColor: '#388e3c',
+                            backgroundColor: 'rgba(76, 175, 80, 0.04)',
+                            transform: 'translateX(4px)',
+                        },
+                        transition: 'all 0.3s ease'
+                    }}
+                    endIcon={<span>→</span>}
+                >
+                    Donation Management Portal
+                </Button>
+            </Box>
+
             {scanDate && (
                 <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                    Last scanned: {NearExpiredService.formatScanDate(scanDate)} | 
+                    Last scanned: {NearExpiredService.formatScanDate(scanDate)} |
                     Showing {Math.min(startIndex + 1, nearExpiredItems.length)}-{Math.min(endIndex, nearExpiredItems.length)} of {nearExpiredItems.length} items
                 </Typography>
             )}
-            
+
             {error && (
                 <Alert severity="warning" sx={{ mb: 2 }}>
                     {error}
                 </Alert>
             )}
-            
-            {/* Items Table */}
+
             <StyledPaper>
                 <TableContainer>
                     <Table>
@@ -224,30 +301,57 @@ const NearExpiredItems: React.FC = () => {
                                 <TableCell>Quantity</TableCell>
                                 <TableCell>Expiry Date</TableCell>
                                 <TableCell>Scan Date</TableCell>
+                                <TableCell>Dynamic Menu</TableCell>
                                 <TableCell>Donation</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {currentItems.map((item, index) => (
-                                <TableRow key={item.item_id || index}>
-                                    <TableCell>{item.item_name}</TableCell>
-                                    <TableCell>{item.quantity}</TableCell>
-                                    <TableCell>{NearExpiredService.formatExpiryDate(item.expiry_date)}</TableCell>
-                                    <TableCell>{NearExpiredService.formatScanDate(scanDate)}</TableCell>
-                                    <TableCell>
-                                        <Checkbox
-                                            checked={checkedItems[item.item_name] || false}
-                                            onChange={() => handleCheckboxChange(item.item_name)}
-                                            color="primary"
-                                        />
+                            {loading ? (Array.from(new Array(5)).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton variant="text" width={120} /></TableCell>
+                                    <TableCell><Skeleton variant="text" width={40} /></TableCell>
+                                    <TableCell><Skeleton variant="rectangular" width={180} height={24} /></TableCell>
+                                    <TableCell><Skeleton variant="text" width={100} /></TableCell>
+                                    <TableCell align="center"><Skeleton variant="rounded" width={80} height={24} /></TableCell>
+                                    <TableCell align="center"><Skeleton variant="circular" width={24} height={24} /></TableCell>
+                                </TableRow>
+                            ))
+                            ) : currentItems.length > 0 ? (
+                                currentItems.map((item, index) => (
+                                    <TableRow key={item.item_id || index}>
+                                        <TableCell>{item.item_name}</TableCell>
+                                        <TableCell>{item.quantity}</TableCell>
+                                        <TableCell>{NearExpiredService.formatExpiryDate(item.expiry_date)}</TableCell>
+                                        <TableCell>{NearExpiredService.formatScanDate(scanDate)}</TableCell>
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={dynamicMenuItems[item.item_name] || false}
+                                                onChange={() => handleDynamicMenuChange(item.item_name)}
+                                                color="primary"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={checkedItems[item.item_name] || false}
+                                                onChange={() => handleCheckboxChange(item.item_name)}
+                                                color="primary"
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">
+                                        <Typography variant="body2" color="text.secondary" py={3}>
+                                            No near expired items found.
+                                        </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                
-                {/* Pagination Controls */}
+
                 {totalPages > 1 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 2 }}>
                         <Pagination
@@ -258,13 +362,29 @@ const NearExpiredItems: React.FC = () => {
                             size="medium"
                             showFirstButton
                             showLastButton
+                            disabled={loading}
                         />
                     </Box>
                 )}
-                
-                {/* Proceed Button */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                    <ProceedButton 
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                    <DynamicMenuButton
+                        onClick={handleGenerateDynamicMenu}
+                        variant="contained"
+                        disabled={menuLoading}
+                        startIcon={menuLoading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                        {menuLoading ? 'Generating Menu...' : 'Generate Dynamic Menu'}
+                    </DynamicMenuButton>
+                    <SuggestedDiscountButton
+                        onClick={handleViewSuggestedDiscount}
+                        variant="contained"
+                        disabled={discountLoading}
+                        startIcon={discountLoading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                        {discountLoading ? 'Generating Discounts...' : 'View Suggested Discount'}
+                    </SuggestedDiscountButton>
+                    <ProceedButton
                         onClick={handleProceed}
                         variant="contained"
                     >
@@ -273,7 +393,6 @@ const NearExpiredItems: React.FC = () => {
                 </Box>
             </StyledPaper>
 
-            {/* Action Analysis and CSR Report */}
             <Grid container spacing={3} sx={{ mt: 1 }}>
                 <Grid item xs={12} md={6}>
                     <ActionAnalysis data={actionAnalysisData} />
@@ -283,13 +402,22 @@ const NearExpiredItems: React.FC = () => {
                 </Grid>
             </Grid>
 
-            {/* Dynamic Menu and Discount Sections */}
             <Grid container spacing={3} sx={{ mt: 1 }}>
                 <Grid item xs={12} md={6}>
-                    <DynamicMenu />
+                    <DynamicMenu items={generatedMenu.length > 0 ? generatedMenu : undefined} />
+                    {menuError && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {menuError}
+                        </Alert>
+                    )}
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <DiscountSection />
+                    <DiscountSection items={suggestedDiscounts.length > 0 ? suggestedDiscounts : undefined} />
+                    {discountError && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {discountError}
+                        </Alert>
+                    )}
                 </Grid>
             </Grid>
         </Box>

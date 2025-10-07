@@ -1,0 +1,1051 @@
+import React, { useState } from 'react';
+import {
+    Box,
+    Typography,
+    Paper,
+    Grid,
+    Button,
+    styled,
+    Card,
+    CardContent,
+    Chip,
+    Divider,
+    alpha,
+
+    TextField,
+    MenuItem,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    IconButton,
+    List,
+    ListItem,
+    ListItemText,
+    Badge,
+} from '@mui/material';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    Rectangle,
+} from 'recharts';
+import { ResponsiveHeatMap } from '@nivo/heatmap';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import CloseIcon from '@mui/icons-material/Close';
+import { teal, orange, blue, red } from '@mui/material/colors';
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+    padding: theme.spacing(3),
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+    backgroundColor: '#ffffff',
+    border: '1px solid #e5e7eb',
+    height: '100%',
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+    }
+}));
+
+const HeaderBox = styled(Box)(({ theme }) => ({
+    backgroundColor: '#f8fafc',
+    borderRadius: '12px',
+    padding: theme.spacing(3),
+    color: '#1f2937',
+    marginBottom: theme.spacing(3),
+    border: '1px solid #e5e7eb',
+}));
+
+const MetricCard = styled(Card)(({ theme }) => ({
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+    border: '1px solid #e5e7eb',
+    backgroundColor: '#ffffff',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        transform: 'translateY(-2px)',
+    }
+}));
+
+// Mock data for Historical Order Patterns (Heatmap data)
+type HeatmapDataPoint = {
+    hour: string;
+    orders: number;
+};
+
+type HeatmapRow = {
+    day: string;
+    [key: string]: string | number; // For dynamic hour keys
+};
+
+const generateHeatmapData = (): HeatmapRow[] => {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days.map(day => {
+        const rowData: HeatmapRow = { day };
+        // Add data for working hours (10:00 - 22:00)
+        for (let hour = 10; hour < 23; hour++) {
+            const hourKey = String(hour).padStart(2, '0') + 'h';
+            // Generate higher numbers during peak hours (11:00 - 14:00)
+            const isPeakHour = hour >= 11 && hour <= 14;
+            const baseValue = isPeakHour ? 25 : 10;
+            const variation = isPeakHour ? 25 : 15;
+            rowData[hourKey] = Math.floor(Math.random() * variation) + baseValue;
+        }
+        return rowData;
+    });
+};
+
+const heatmapData = generateHeatmapData();
+
+// Mock data for Average Wait Time Trends
+const waitTimeTrends = Array.from({ length: 14 }, (_, index) => ({
+    date: (index + 1) + '/9',
+    avgWaitTime: Math.floor(Math.random() * 15 + 10),
+    targetTime: 15
+}));
+
+// Mock data for Inventory Usage Trends
+const inventoryTrends = Array.from({ length: 14 }, (_, index) => ({
+    date: (index + 1) + '/9',
+    stock: Math.floor(Math.random() * 200 + 300),
+    usage: Math.floor(Math.random() * 150 + 200)
+}));
+
+// Mock data for Cost & Waste Analysis
+const wasteAnalysis = Array.from({ length: 6 }, (_, index) => ({
+    month: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'][index],
+    foodCost: Math.floor(Math.random() * 5000 + 15000),
+    wastePercentage: Number((Math.random() * 8 + 2).toFixed(1))
+}));
+
+// Staff Efficiency Score calculation
+const staffEfficiency = {
+    score: 87,
+    total: 100,
+    trend: '+2.5%'
+};
+
+// Mock order data based on database schema
+const generateOrderDetails = (hour: string, date: string) => {
+    const dishes = [
+        { dish_id: 512, dish_name: 'Liqueurs', category: 'Beverages', subcategory: 'Alcoholic Drinks', price: 14, meal_period: 'both' },
+        { dish_id: 401, dish_name: 'Chocolate Cake', category: 'Desserts', subcategory: 'Cakes', price: 15, meal_period: 'both' },
+        { dish_id: 403, dish_name: 'Carrot Cake', category: 'Desserts', subcategory: 'Cakes', price: 14, meal_period: 'both' },
+        { dish_id: 304, dish_name: 'Potato Wedges', category: 'Sides', subcategory: 'Potatoes', price: 8, meal_period: 'both' },
+        { dish_id: 501, dish_name: 'Water', category: 'Beverages', subcategory: 'Non-Alcoholic Drinks', price: 2, meal_period: 'both' },
+        { dish_id: 410, dish_name: 'Rice Pudding', category: 'Desserts', subcategory: 'Puddings', price: 14, meal_period: 'both' },
+        { dish_id: 201, dish_name: 'Grilled Chicken', category: 'Main Course', subcategory: 'Poultry', price: 25, meal_period: 'both' },
+        { dish_id: 101, dish_name: 'Caesar Salad', category: 'Appetizers', subcategory: 'Salads', price: 12, meal_period: 'both' },
+    ];
+
+    const orders = [];
+    const numOrders = Math.floor(Math.random() * 8) + 3; // 3-10 different dishes per hour
+
+    for (let i = 0; i < numOrders; i++) {
+        const dish = dishes[Math.floor(Math.random() * dishes.length)];
+        const quantity = Math.floor(Math.random() * 15) + 1; // 1-15 quantity
+        const revenue = dish.price * quantity;
+        
+        orders.push({
+            ...dish,
+            date,
+            hour,
+            quantity_sold: quantity,
+            revenue,
+            avg_table_size: Math.round((Math.random() * 2 + 2) * 10) / 10, // 2.0-4.0
+            temp_max: Math.round((Math.random() * 10 + 25) * 10) / 10, // 25-35°C
+            is_weekend: new Date(date).getDay() === 0 || new Date(date).getDay() === 6,
+            is_holiday: false,
+            is_special_event: Math.random() > 0.8,
+        });
+    }
+
+    return orders;
+};
+
+const PerformanceTrends: React.FC = () => {
+    const handleExportPDF = () => {
+        // PDF export logic would go here
+        console.log('Exporting to PDF...');
+    };
+
+    const [selectedDate, setSelectedDate] = useState('2025-10-06'); // Default to today
+    const [currentMonth, setCurrentMonth] = useState(10); // Start with October
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
+    const [orderDetails, setOrderDetails] = useState<any[]>([]);
+    
+    // Generate calendar days for current month
+    const getCurrentMonthDays = () => {
+        const year = 2025;
+        const daysInMonth = new Date(year, currentMonth, 0).getDate();
+        const firstDay = new Date(year, currentMonth - 1, 1).getDay();
+        
+        const days = [];
+        // Add empty cells for days before the first day of the month
+        for (let i = 0; i < firstDay; i++) {
+            days.push(null);
+        }
+        
+        // Add days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = `${year}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            const isAfterHackathon = currentMonth === 10 && day > 12; // Disable dates after Oct 12
+            
+            days.push({
+                day,
+                date,
+                isToday: date === '2025-10-06',
+                isSelected: date === selectedDate,
+                isDisabled: isAfterHackathon
+            });
+        }
+        
+        return days;
+    };
+
+    const handleViewOrderDetails = (hour: string) => {
+        setSelectedTimeSlot(hour);
+        setOrderDetails(generateOrderDetails(hour, selectedDate));
+        setDialogOpen(true);
+    };
+
+    // Generate hourly data for selected date
+    const generateHourlyData = (date: string) => {
+        const hours = [];
+        for (let hour = 10; hour <= 22; hour++) {
+            const isPeakHour = hour >= 12 && hour <= 14;
+            const baseValue = isPeakHour ? 35 : 15;
+            const variation = isPeakHour ? 20 : 15;
+            const orders = Math.floor(Math.random() * variation) + baseValue;
+            
+            hours.push({
+                hour: `${hour.toString().padStart(2, '0')}:00`,
+                orders,
+                status: orders >= 40 ? 'high' : orders >= 25 ? 'medium' : 'low'
+            });
+        }
+        return hours;
+    };
+
+    const hourlyData = generateHourlyData(selectedDate);
+
+    return (
+        <Box sx={{ 
+            padding: 3, 
+            backgroundColor: '#f8fafc', 
+            minHeight: '100vh'
+        }}>
+            <HeaderBox>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <AnalyticsIcon sx={{ fontSize: 32, color: '#3b82f6' }} />
+                        <Box>
+                            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5, color: '#1f2937' }}>
+                                Performance Analytics
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                Real-time insights and business intelligence dashboard
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Button
+                        variant="contained"
+                        startIcon={<FileDownloadIcon />}
+                        onClick={handleExportPDF}
+                        sx={{
+                            bgcolor: '#3b82f6',
+                            '&:hover': {
+                                bgcolor: '#2563eb',
+                            }
+                        }}
+                    >
+                        Export Report
+                    </Button>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+                    <Chip 
+                        icon={<TrendingUpIcon sx={{ fontSize: 16 }} />}
+                        label="Live Data" 
+                        size="small" 
+                        sx={{ bgcolor: '#dbeafe', color: '#1e40af' }} 
+                    />
+                    <Chip 
+                        label="Updated 2 min ago" 
+                        size="small" 
+                        sx={{ bgcolor: '#f3f4f6', color: '#6b7280' }} 
+                    />
+                    <Chip 
+                        icon={<RestaurantIcon sx={{ fontSize: 16 }} />}
+                        label="SmartKitchen Pro" 
+                        size="small" 
+                        sx={{ bgcolor: '#ecfdf5', color: '#059669' }} 
+                    />
+                </Box>
+            </HeaderBox>
+
+            <Grid container spacing={3}>
+                {/* Staff Efficiency Score */}
+                <Grid item xs={12} md={4}>
+                    <StyledPaper>
+                        <Typography variant="h6" gutterBottom>
+                            Staff Efficiency Score
+                        </Typography>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center',
+                            mt: 2
+                        }}>
+                            <Typography variant="h2" sx={{ color: teal[500] }}>
+                                {staffEfficiency.score}%
+                            </Typography>
+                            <Typography 
+                                variant="subtitle1" 
+                                sx={{ 
+                                    color: staffEfficiency.trend.startsWith('+') ? 'success.main' : 'error.main',
+                                    mt: 1
+                                }}
+                            >
+                                {staffEfficiency.trend} vs last month
+                            </Typography>
+                        </Box>
+                    </StyledPaper>
+                </Grid>
+
+                {/* Wait Time Trends */}
+                <Grid item xs={12} md={8}>
+                    <StyledPaper>
+                        <Typography variant="h6" gutterBottom>
+                            Average Wait Time Trends
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={waitTimeTrends}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="avgWaitTime" 
+                                    stroke={blue[500]} 
+                                    name="Average Wait Time"
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="targetTime" 
+                                    stroke={orange[500]} 
+                                    strokeDasharray="5 5" 
+                                    name="Target Time"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </StyledPaper>
+                </Grid>
+
+                {/* Historical Order Patterns */}
+                <Grid item xs={12}>
+                    <StyledPaper>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Box>
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937', mb: 0.5 }}>
+                                    Historical Order Patterns
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#6b7280', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <AnalyticsIcon sx={{ fontSize: 16 }} />
+                                    Daily analysis across operational hours ({selectedDate})
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        <Grid container spacing={3}>
+                            {/* Calendar Date Selector */}
+                            <Grid item xs={12} md={3}>
+                                <Box sx={{ 
+                                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                                    borderRadius: '16px', 
+                                    p: 3,
+                                    border: '1px solid #e5e7eb',
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                                }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                                        <CalendarTodayIcon sx={{ fontSize: 20, color: '#3b82f6' }} />
+                                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                            Select Date
+                                        </Typography>
+                                    </Box>
+                                    
+                                    {/* Calendar Month Display */}
+                                    <Box sx={{ 
+                                        bgcolor: 'white', 
+                                        borderRadius: '12px', 
+                                        p: 2,
+                                        border: '1px solid #e5e7eb',
+                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                                    }}>
+                                        {/* Month Header with Navigation */}
+                                        <Box sx={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center',
+                                            mb: 2,
+                                            p: 1,
+                                            bgcolor: '#f8fafc',
+                                            borderRadius: '8px'
+                                        }}>
+                                            <IconButton 
+                                                size="small"
+                                                onClick={() => setCurrentMonth(currentMonth === 10 ? 9 : 10)}
+                                                sx={{ 
+                                                    color: '#6b7280',
+                                                    '&:hover': { bgcolor: '#e5e7eb' }
+                                                }}
+                                            >
+                                                <Box sx={{ 
+                                                    transform: 'rotate(180deg)',
+                                                    display: 'flex',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    ▶
+                                                </Box>
+                                            </IconButton>
+                                            <Typography variant="subtitle1" sx={{ 
+                                                fontWeight: 'bold', 
+                                                color: '#1f2937',
+                                                fontSize: '1rem'
+                                            }}>
+                                                {currentMonth === 10 ? 'October' : 'September'} 2025
+                                            </Typography>
+                                            <IconButton 
+                                                size="small"
+                                                onClick={() => setCurrentMonth(currentMonth === 10 ? 9 : 10)}
+                                                sx={{ 
+                                                    color: '#6b7280',
+                                                    '&:hover': { bgcolor: '#e5e7eb' }
+                                                }}
+                                            >
+                                                ▶
+                                            </IconButton>
+                                        </Box>
+                                        
+                                        {/* Weekday headers */}
+                                        <Box sx={{ 
+                                            display: 'grid', 
+                                            gridTemplateColumns: 'repeat(7, 1fr)', 
+                                            gap: 1,
+                                            mb: 1
+                                        }}>
+                                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                                                <Typography key={day} variant="caption" sx={{ 
+                                                    textAlign: 'center', 
+                                                    color: '#6b7280',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 'bold',
+                                                    p: 1
+                                                }}>
+                                                    {day}
+                                                </Typography>
+                                            ))}
+                                        </Box>
+                                        
+                                        {/* Calendar days */}
+                                        <Box sx={{ 
+                                            display: 'grid', 
+                                            gridTemplateColumns: 'repeat(7, 1fr)', 
+                                            gap: 1
+                                        }}>
+                                            {getCurrentMonthDays().map((dayData, index) => (
+                                                <Box key={index} sx={{ aspectRatio: '1', position: 'relative' }}>
+                                                    {dayData && (
+                                                        <Button
+                                                            size="small"
+                                                            disabled={dayData.isDisabled}
+                                                            onClick={() => !dayData.isDisabled && setSelectedDate(dayData.date)}
+                                                            sx={{
+                                                                minWidth: 0,
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                fontSize: '0.8rem',
+                                                                borderRadius: '8px',
+                                                                fontWeight: dayData.isSelected || dayData.isToday ? 'bold' : 'medium',
+                                                                bgcolor: dayData.isDisabled ? '#f3f4f6' :
+                                                                        dayData.isSelected ? '#3b82f6' : 
+                                                                        dayData.isToday ? '#dbeafe' : 
+                                                                        'transparent',
+                                                                color: dayData.isDisabled ? '#9ca3af' :
+                                                                       dayData.isSelected ? 'white' : 
+                                                                       dayData.isToday ? '#1d4ed8' : '#374151',
+                                                                border: dayData.isToday && !dayData.isSelected ? '2px solid #3b82f6' : 'none',
+                                                                '&:hover': {
+                                                                    bgcolor: dayData.isDisabled ? '#f3f4f6' :
+                                                                            dayData.isSelected ? '#2563eb' : '#f0f9ff',
+                                                                    transform: dayData.isDisabled ? 'none' : 'scale(1.05)'
+                                                                },
+                                                                '&:disabled': {
+                                                                    cursor: 'not-allowed'
+                                                                },
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        >
+                                                            {dayData.day}
+                                                        </Button>
+                                                    )}
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                </Box>
+                            </Grid>
+
+                            {/* Order Patterns Table */}
+                            <Grid item xs={12} md={9}>
+                                <Box sx={{ 
+                                    backgroundColor: 'white',
+                                    borderRadius: '16px',
+                                    border: '1px solid #e5e7eb',
+                                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+                                    overflow: 'hidden',
+                                    height: 'fit-content'
+                                }}>
+                                    {/* Table Header */}
+                                    <Box sx={{ 
+                                        backgroundColor: '#f8fafc',
+                                        borderBottom: '1px solid #e5e7eb',
+                                        p: 2.5
+                                    }}>
+                                        <Typography variant="h6" sx={{ 
+                                            fontWeight: 'bold', 
+                                            color: '#1f2937',
+                                            mb: 0.5
+                                        }}>
+                                            📊 Daily Order Analysis
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ 
+                                            color: '#6b7280'
+                                        }}>
+                                            Hourly breakdown for {new Date(selectedDate).toLocaleDateString('en-US', { 
+                                                weekday: 'long', 
+                                                month: 'long', 
+                                                day: 'numeric' 
+                                            })}
+                                        </Typography>
+                                    </Box>
+
+                                    {/* Card-based Layout */}
+                                    <Box sx={{ 
+                                        height: 500,
+                                        overflowY: 'auto',
+                                        p: 2
+                                    }}>
+                                        {hourlyData.map((row, index) => {
+                                            // Check if selected date is after Oct 12 (no data)
+                                            const selectedDateObj = new Date(selectedDate);
+                                            const isAfterHackathon = selectedDateObj.getMonth() === 9 && selectedDateObj.getDate() > 12;
+                                            
+                                            return (
+                                                <Card
+                                                    key={row.hour}
+                                                    sx={{
+                                                        mb: 1.5,
+                                                        borderRadius: '12px',
+                                                        border: '1px solid #e5e7eb',
+                                                        bgcolor: isAfterHackathon ? '#f8f9fa' :
+                                                                row.hour >= '12:00' && row.hour <= '14:00' ? 
+                                                                '#eff6ff' : 'white',
+                                                        opacity: isAfterHackathon ? 0.6 : 1,
+                                                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                        '&:hover': {
+                                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                                            transform: 'translateY(-1px)'
+                                                        },
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                >
+                                                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                                            {/* Time Slot */}
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 120 }}>
+                                                                <Typography variant="h6" sx={{ 
+                                                                    fontWeight: 'bold',
+                                                                    color: isAfterHackathon ? '#9ca3af' :
+                                                                           row.hour >= '12:00' && row.hour <= '14:00' ? '#1d4ed8' : '#374151',
+                                                                    fontSize: '0.9rem',
+                                                                    minWidth: 20
+                                                                }}>
+                                                                    {index + 10}
+                                                                </Typography>
+                                                                <Box>
+                                                                    <Typography variant="body1" sx={{ 
+                                                                        fontWeight: 'medium',
+                                                                        color: isAfterHackathon ? '#9ca3af' : '#374151'
+                                                                    }}>
+                                                                        {row.hour}
+                                                                    </Typography>
+                                                                    {row.hour >= '12:00' && row.hour <= '14:00' && !isAfterHackathon && (
+                                                                        <Chip 
+                                                                            label="🔥 Peak Hour" 
+                                                                            size="small" 
+                                                                            sx={{ 
+                                                                                bgcolor: '#fef3c7',
+                                                                                color: '#d97706',
+                                                                                fontSize: '0.6rem',
+                                                                                height: 16,
+                                                                                mt: 0.5
+                                                                            }} 
+                                                                        />
+                                                                    )}
+                                                                </Box>
+                                                            </Box>
+
+                                                            {/* Orders Display */}
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                                                                {isAfterHackathon ? (
+                                                                    <Box sx={{ 
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 1,
+                                                                        p: 1.5,
+                                                                        borderRadius: '8px',
+                                                                        bgcolor: '#f3f4f6',
+                                                                        border: '1px dashed #d1d5db',
+                                                                        minWidth: 100
+                                                                    }}>
+                                                                        <Typography variant="body2" sx={{ 
+                                                                            color: '#9ca3af',
+                                                                            fontStyle: 'italic'
+                                                                        }}>
+                                                                            No data
+                                                                        </Typography>
+                                                                    </Box>
+                                                                ) : (
+                                                                    <Box sx={{ 
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 1,
+                                                                        p: 1.5,
+                                                                        borderRadius: '8px',
+                                                                        bgcolor: row.status === 'high' ? '#fef2f2' :
+                                                                                row.status === 'medium' ? '#fefbf2' : '#f0fdf4',
+                                                                        border: `1px solid ${row.status === 'high' ? '#fecaca' :
+                                                                                             row.status === 'medium' ? '#fed7aa' : '#bbf7d0'}`,
+                                                                        minWidth: 100
+                                                                    }}>
+                                                                        <Typography variant="h6" sx={{ 
+                                                                            fontWeight: 'bold',
+                                                                            color: row.status === 'high' ? '#dc2626' :
+                                                                                   row.status === 'medium' ? '#d97706' : '#16a34a',
+                                                                            fontSize: '1.1rem'
+                                                                        }}>
+                                                                            {row.orders}
+                                                                        </Typography>
+                                                                        <Typography variant="caption" sx={{ 
+                                                                            color: row.status === 'high' ? '#dc2626' :
+                                                                                   row.status === 'medium' ? '#d97706' : '#16a34a',
+                                                                            fontWeight: 'medium'
+                                                                        }}>
+                                                                            orders
+                                                                        </Typography>
+                                                                    </Box>
+                                                                )}
+
+                                                                {/* Status Chip */}
+                                                                {isAfterHackathon ? (
+                                                                    <Chip
+                                                                        label="No Data"
+                                                                        size="small"
+                                                                        sx={{
+                                                                            bgcolor: '#f3f4f6',
+                                                                            color: '#9ca3af',
+                                                                            fontWeight: 'medium',
+                                                                            ml: 'auto'
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <Chip
+                                                                        label={`● ${row.status === 'high' ? 'High' : 
+                                                                                   row.status === 'medium' ? 'Medium' : 'Low'} Activity`}
+                                                                        size="small"
+                                                                        sx={{
+                                                                            bgcolor: row.status === 'high' ? '#dc2626' :
+                                                                                    row.status === 'medium' ? '#d97706' : '#16a34a',
+                                                                            color: 'white',
+                                                                            fontWeight: 'bold',
+                                                                            ml: 'auto'
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </Box>
+
+                                                            {/* Action Button */}
+                                                            <Box>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    size="small"
+                                                                    disabled={isAfterHackathon}
+                                                                    onClick={() => !isAfterHackathon && handleViewOrderDetails(row.hour)}
+                                                                    startIcon={<VisibilityIcon />}
+                                                                    sx={{
+                                                                        bgcolor: isAfterHackathon ? '#f3f4f6' : '#3b82f6',
+                                                                        color: isAfterHackathon ? '#9ca3af' : 'white',
+                                                                        '&:hover': {
+                                                                            bgcolor: isAfterHackathon ? '#f3f4f6' : '#2563eb'
+                                                                        },
+                                                                        '&:disabled': {
+                                                                            cursor: 'not-allowed'
+                                                                        },
+                                                                        minWidth: 80,
+                                                                        textTransform: 'none'
+                                                                    }}
+                                                                >
+                                                                    VIEW
+                                                                </Button>
+                                                            </Box>
+                                                        </Box>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })}
+                                    </Box>
+                                </Box>
+                            </Grid>
+                        </Grid>
+
+                        <Divider sx={{ my: 3 }} />
+                        
+                        {/* Enhanced Summary Stats */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+                            <MetricCard sx={{ flex: 1 }}>
+                                <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                    <Box sx={{ 
+                                        width: 48, 
+                                        height: 48, 
+                                        borderRadius: '50%', 
+                                        bgcolor: alpha('#1976d2', 0.1),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 16px auto'
+                                    }}>
+                                        <TrendingUpIcon sx={{ color: '#1976d2', fontSize: 24 }} />
+                                    </Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
+                                        12:00-14:00
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                                        Peak Performance Hours
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ 
+                                        color: '#10b981', 
+                                        fontWeight: 'bold',
+                                        bgcolor: alpha('#10b981', 0.1),
+                                        px: 1,
+                                        py: 0.5,
+                                        borderRadius: 1,
+                                        mt: 1,
+                                        display: 'inline-block'
+                                    }}>
+                                        46 avg orders/hr
+                                    </Typography>
+                                </CardContent>
+                            </MetricCard>
+                            
+                            <MetricCard sx={{ flex: 1 }}>
+                                <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                    <Box sx={{ 
+                                        width: 48, 
+                                        height: 48, 
+                                        borderRadius: '50%', 
+                                        bgcolor: alpha('#2e7d32', 0.1),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 16px auto'
+                                    }}>
+                                        <RestaurantIcon sx={{ color: '#2e7d32', fontSize: 24 }} />
+                                    </Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2e7d32', mb: 1 }}>
+                                        Saturday
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                                        Highest Volume Day
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ 
+                                        color: '#2e7d32', 
+                                        fontWeight: 'bold',
+                                        bgcolor: alpha('#2e7d32', 0.1),
+                                        px: 1,
+                                        py: 0.5,
+                                        borderRadius: 1,
+                                        mt: 1,
+                                        display: 'inline-block'
+                                    }}>
+                                        320 total orders
+                                    </Typography>
+                                </CardContent>
+                            </MetricCard>
+                            
+                            <MetricCard sx={{ flex: 1 }}>
+                                <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                    <Box sx={{ 
+                                        width: 48, 
+                                        height: 48, 
+                                        borderRadius: '50%', 
+                                        bgcolor: alpha('#ed6c02', 0.1),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 16px auto'
+                                    }}>
+                                        <AnalyticsIcon sx={{ color: '#ed6c02', fontSize: 24 }} />
+                                    </Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#ed6c02', mb: 1 }}>
+                                        +12.5%
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                                        Weekly Growth Rate
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ 
+                                        color: '#10b981', 
+                                        fontWeight: 'bold',
+                                        bgcolor: alpha('#10b981', 0.1),
+                                        px: 1,
+                                        py: 0.5,
+                                        borderRadius: 1,
+                                        mt: 1,
+                                        display: 'inline-block'
+                                    }}>
+                                        Above target
+                                    </Typography>
+                                </CardContent>
+                            </MetricCard>
+                        </Box>
+                    </StyledPaper>
+                </Grid>
+
+                {/* Inventory Usage Trends */}
+                <Grid item xs={12} md={6}>
+                    <StyledPaper>
+                        <Typography variant="h6" gutterBottom>
+                            Inventory Usage Trends
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={inventoryTrends}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="stock" 
+                                    stroke={blue[500]} 
+                                    name="Stock Level"
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="usage" 
+                                    stroke={orange[500]} 
+                                    name="Usage"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </StyledPaper>
+                </Grid>
+
+                {/* Cost & Waste Analysis */}
+                <Grid item xs={12} md={6}>
+                    <StyledPaper>
+                        <Typography variant="h6" gutterBottom>
+                            Cost & Waste Analysis
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={wasteAnalysis}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis yAxisId="left" orientation="left" stroke={blue[500]} />
+                                <YAxis yAxisId="right" orientation="right" stroke={red[500]} />
+                                <Tooltip />
+                                <Legend />
+                                <Bar
+                                    yAxisId="left"
+                                    dataKey="foodCost"
+                                    name="Food Cost (RM)"
+                                    fill={blue[500]}
+                                    activeBar={<Rectangle fill={blue[700]} stroke={blue[700]} />}
+                                />
+                                <Bar
+                                    yAxisId="right"
+                                    dataKey="wastePercentage"
+                                    name="Waste %"
+                                    fill={red[500]}
+                                    activeBar={<Rectangle fill={red[700]} stroke={red[700]} />}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </StyledPaper>
+                </Grid>
+            </Grid>
+
+            {/* Order Details Dialog */}
+            <Dialog
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: '16px',
+                        maxHeight: '80vh'
+                    }
+                }}
+            >
+                <DialogTitle sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    bgcolor: '#f8fafc',
+                    borderBottom: '1px solid #e5e7eb'
+                }}>
+                    <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                            Order Details - {selectedTimeSlot}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                            {selectedDate} • {orderDetails.length} menu items
+                        </Typography>
+                    </Box>
+                    <IconButton onClick={() => setDialogOpen(false)} size="small">
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent sx={{ p: 0 }}>
+                    <List sx={{ p: 0 }}>
+                        {orderDetails.map((order, index) => (
+                            <ListItem
+                                key={`${order.dish_id}-${index}`}
+                                sx={{
+                                    borderBottom: index < orderDetails.length - 1 ? '1px solid #f3f4f6' : 'none',
+                                    p: 3,
+                                    '&:hover': { bgcolor: '#f9fafb' }
+                                }}
+                            >
+                                <ListItemText
+                                    primary={
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <Box>
+                                                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937', mb: 0.5 }}>
+                                                    {order.dish_name}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                                                    <Chip 
+                                                        label={order.category} 
+                                                        size="small" 
+                                                        sx={{ bgcolor: '#e0e7ff', color: '#3730a3', fontSize: '0.7rem' }}
+                                                    />
+                                                    <Chip 
+                                                        label={order.subcategory} 
+                                                        size="small" 
+                                                        sx={{ bgcolor: '#ecfdf5', color: '#047857', fontSize: '0.7rem' }}
+                                                    />
+                                                    {order.is_special_event && (
+                                                        <Chip 
+                                                            label="Special Event" 
+                                                            size="small" 
+                                                            sx={{ bgcolor: '#fef3c7', color: '#92400e', fontSize: '0.7rem' }}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            </Box>
+                                            <Box sx={{ textAlign: 'right' }}>
+                                                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#059669' }}>
+                                                    RM {order.revenue.toFixed(2)}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                                    {order.quantity_sold} × RM {order.price}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    }
+                                    secondary={
+                                        <Box sx={{ mt: 2 }}>
+                                            <Grid container spacing={2}>
+                                                <Grid item xs={6} sm={3}>
+                                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                                        Quantity Sold
+                                                    </Typography>
+                                                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                                        {order.quantity_sold} units
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={6} sm={3}>
+                                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                                        Avg Table Size
+                                                    </Typography>
+                                                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                                        {order.avg_table_size} people
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={6} sm={3}>
+                                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                                        Meal Period
+                                                    </Typography>
+                                                    <Typography variant="body2" sx={{ fontWeight: 'medium', textTransform: 'capitalize' }}>
+                                                        {order.meal_period}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={6} sm={3}>
+                                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                                        Temperature
+                                                    </Typography>
+                                                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                                        {order.temp_max}°C
+                                                    </Typography>
+                                                </Grid>
+                                            </Grid>
+                                        </Box>
+                                    }
+                                />
+                            </ListItem>
+                        ))}
+                    </List>
+                    
+                    {/* Summary */}
+                    <Box sx={{ 
+                        p: 3, 
+                        bgcolor: '#f8fafc', 
+                        borderTop: '1px solid #e5e7eb',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <Box>
+                            <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                Total Items: {orderDetails.reduce((sum, order) => sum + order.quantity_sold, 0)}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                Total Revenue: RM {orderDetails.reduce((sum, order) => sum + order.revenue, 0).toFixed(2)}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+            </Dialog>
+        </Box>
+    );
+};
+
+export default PerformanceTrends;
