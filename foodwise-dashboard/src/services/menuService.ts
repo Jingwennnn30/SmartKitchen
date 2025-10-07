@@ -1,7 +1,7 @@
 // API service for fetching and saving dynamic menu data from AWS Lambda
 
-const API_BASE_URL = 'https://2m5g.execute-api.us-east-1.amazonaws.com/dev';
-const SAVE_MENU_API_URL = 'https://cfvreg.execute-api.us-east-1.amazonaws.com/dev/savemenu';
+const API_BASE_URL = 'https://2wmnd2im5g.execute-api.us-east-1.amazonaws.com/dev';
+const SAVE_MENU_API_URL = 'https://xt7bcfvreg.execute-api.us-east-1.amazonaws.com/dev/savemenu';
 
 export interface MenuItem {
     name: string;
