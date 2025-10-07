@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -95,9 +95,12 @@ const PerformanceTrends: React.FC = () => {
     const [data, setData] = useState<PerformanceResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedRange, setSelectedRange] = useState({
-        startDate: "3/9/2025",
-        endDate: "6/9/2025",
+        startDate: "",
+        endDate: "",
     });
+    
+    // Cache for API responses to enable instant display
+    const [dataCache, setDataCache] = useState<Map<string, PerformanceResponse>>(new Map());
     
     // UI state
     const [selectedDates, setSelectedDates] = useState<string[]>([]); // Start with no selection
@@ -107,19 +110,30 @@ const PerformanceTrends: React.FC = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
     const [orderDetails, setOrderDetails] = useState<any[]>([]);
+    const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
 
     const handleExportPDF = () => {
         // PDF export logic would go here
         console.log('Exporting to PDF...');
     };
 
-    // Load performance data from API
+    // Load performance data from API with caching
     const loadPerformanceData = async () => {
         try {
+            const cacheKey = `${selectedRange.startDate}-${selectedRange.endDate}`;
+            
+            // Check cache first for instant display
+            if (dataCache.has(cacheKey)) {
+                console.log('Using cached data for instant display');
+                setData(dataCache.get(cacheKey)!);
+                return;
+            }
+            
             setLoading(true);
-            console.log('Loading data for range:', selectedRange);
             const result = await fetchPerformanceData(selectedRange.startDate, selectedRange.endDate);
-            console.log('API Response:', result);
+            
+            // Cache the result
+            setDataCache(prev => new Map(prev).set(cacheKey, result));
             setData(result);
         } catch (err) {
             console.error("Error fetching performance data:", err);
@@ -129,14 +143,28 @@ const PerformanceTrends: React.FC = () => {
     };
 
     useEffect(() => {
-        loadPerformanceData();
-    }, [selectedRange.startDate, selectedRange.endDate]);
-    
-    // Load data initially - start with showing all available data
-    useEffect(() => {
-        // Load initial data without selecting specific dates
-        loadPerformanceData();
-    }, []);
+        // Only load data if we have selected dates, not on initial load
+        if (selectedRange.startDate && selectedRange.endDate) {
+            // Clear existing timeout
+            if (debounceTimeout) {
+                clearTimeout(debounceTimeout);
+            }
+            
+            // Set new timeout for debounced API call
+            const newTimeout = setTimeout(() => {
+                loadPerformanceData();
+            }, 50); // Further reduced to 50ms for near-instant response
+            
+            setDebounceTimeout(newTimeout);
+            
+            // Cleanup function
+            return () => {
+                if (newTimeout) {
+                    clearTimeout(newTimeout);
+                }
+            };
+        }
+    }, [selectedRange.startDate, selectedRange.endDate]); // Removed selectedDates.length dependency
     
     // Generate calendar days for current month
     const getCurrentMonthDays = () => {
@@ -190,10 +218,10 @@ const PerformanceTrends: React.FC = () => {
             setStartDate(null);
             setEndDate(null);
             setSelectedDates([]);
-            // Reset to default range
+            // Reset to empty state
             setSelectedRange({
-                startDate: "3/9/2025",
-                endDate: "6/9/2025",
+                startDate: "",
+                endDate: "",
             });
             return;
         }
@@ -206,10 +234,19 @@ const PerformanceTrends: React.FC = () => {
             // Update API for single date
             const dateObj = new Date(startDate);
             const apiDate = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
-            setSelectedRange({
+            const newRange = {
                 startDate: apiDate,
                 endDate: apiDate
-            });
+            };
+            
+            // Check cache for instant display
+            const cacheKey = `${apiDate}-${apiDate}`;
+            if (dataCache.has(cacheKey)) {
+                console.log('Instant display from cache');
+                setData(dataCache.get(cacheKey)!);
+            }
+            
+            setSelectedRange(newRange);
             return;
         }
         
@@ -222,10 +259,19 @@ const PerformanceTrends: React.FC = () => {
             // Update API for single date
             const dateObj = new Date(date);
             const apiDate = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
-            setSelectedRange({
+            const newRange = {
                 startDate: apiDate,
                 endDate: apiDate
-            });
+            };
+            
+            // Check cache for instant display
+            const cacheKey = `${apiDate}-${apiDate}`;
+            if (dataCache.has(cacheKey)) {
+                console.log('Instant display from cache');
+                setData(dataCache.get(cacheKey)!);
+            }
+            
+            setSelectedRange(newRange);
         } else if (startDate && !endDate) {
             // Second click - validate that end date is after start date
             const start = new Date(startDate);
@@ -252,10 +298,19 @@ const PerformanceTrends: React.FC = () => {
                 const apiStartDate = `${startDateObj.getDate()}/${startDateObj.getMonth() + 1}/${startDateObj.getFullYear()}`;
                 const apiEndDate = `${endDateObj.getDate()}/${endDateObj.getMonth() + 1}/${endDateObj.getFullYear()}`;
                 
-                setSelectedRange({
+                const newRange = {
                     startDate: apiStartDate,
                     endDate: apiEndDate
-                });
+                };
+                
+                // Check cache for instant display
+                const cacheKey = `${apiStartDate}-${apiEndDate}`;
+                if (dataCache.has(cacheKey)) {
+                    console.log('Instant display from cache for date range');
+                    setData(dataCache.get(cacheKey)!);
+                }
+                
+                setSelectedRange(newRange);
             }
         }
     };
@@ -281,54 +336,57 @@ const PerformanceTrends: React.FC = () => {
         setDialogOpen(true);
     };
 
-    // Get daily breakdown data from API
-    const dailyBreakdown = data?.daily_breakdown || {};
-    const apiSummary = data?.summary;
-    
-    // Convert daily breakdown to array format for table display
-    const allDailyData = Object.entries(dailyBreakdown).map(([date, stats]) => {
-        // Parse date to determine if it's weekend/special event
-        const [day, month, year] = date.split('/');
-        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+    // Get daily breakdown data from API with memoization for performance
+    const { allDailyData, dailyData, apiSummary } = useMemo(() => {
+        const dailyBreakdown = data?.daily_breakdown || {};
+        const apiSummary = data?.summary;
         
-        // Find if this date has special events from the raw items
-        const dayItems = data?.items?.filter(item => item.date === date) || [];
-        const isSpecialEvent = dayItems.some(item => item.is_special_event === "TRUE" || item.is_special_event === true);
-        const isHoliday = dayItems.some(item => item.is_holiday === "TRUE" || item.is_holiday === true);
-        
-        return {
-            date,
-            totalOrders: stats.orders,
-            totalRevenue: parseFloat(stats.revenue.toFixed(2)),
-            isWeekend,
-            isHoliday,
-            isSpecialEvent,
-            status: stats.orders >= 600 ? 'high' : stats.orders >= 400 ? 'medium' : 'low'
-        };
-    });
+        // Convert daily breakdown to array format for table display
+        const allDailyData = Object.entries(dailyBreakdown).map(([date, stats]) => {
+            // Parse date to determine if it's weekend/special event
+            const [day, month, year] = date.split('/');
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+            
+            // Find if this date has special events from the raw items
+            const dayItems = data?.items?.filter(item => item.date === date) || [];
+            const isSpecialEvent = dayItems.some(item => item.is_special_event === "TRUE" || item.is_special_event === true);
+            const isHoliday = dayItems.some(item => item.is_holiday === "TRUE" || item.is_holiday === true);
+            
+            return {
+                date,
+                totalOrders: stats.orders,
+                totalRevenue: parseFloat(stats.revenue.toFixed(2)),
+                isWeekend,
+                isHoliday,
+                isSpecialEvent,
+                status: stats.orders >= 600 ? 'high' : stats.orders >= 400 ? 'medium' : 'low'
+            };
+        });
 
-    // Filter data based on selected dates
-    const dailyData = allDailyData.filter(row => {
-        // If no dates are selected, show NO data (empty table)
-        if (selectedDates.length === 0) {
-            return false;
-        }
-        
-        // Convert date (format: "5/9/2025") to match selectedDates format ("2025-09-05")
-        const [day, month, year] = row.date.split('/');
-        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        const isIncluded = selectedDates.includes(formattedDate);
-        console.log(`Checking date: ${row.date} -> ${formattedDate}, selected dates:`, selectedDates, 'included:', isIncluded);
-        return isIncluded;
-    });
+        // Filter data based on selected dates
+        const dailyData = allDailyData.filter(row => {
+            // If no dates are selected, show NO data (empty table)
+            if (selectedDates.length === 0) {
+                return false;
+            }
+            
+            // Convert date (format: "5/9/2025") to match selectedDates format ("2025-09-05")
+            const [day, month, year] = row.date.split('/');
+            const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            const isIncluded = selectedDates.includes(formattedDate);
+            return isIncluded;
+        });
 
-    // Calculate summary from filtered data (this will match the table)
-    const summary = {
+        return { allDailyData, dailyData, apiSummary };
+    }, [data, selectedDates]);
+
+    // Calculate summary from filtered data (this will match the table) - memoized for performance
+    const summary = useMemo(() => ({
         total_orders: dailyData.reduce((sum, day) => sum + day.totalOrders, 0),
         total_revenue: dailyData.reduce((sum, day) => sum + day.totalRevenue, 0),
         avg_table_size: apiSummary?.avg_table_size || 0 // Keep the original avg table size
-    };
+    }), [dailyData, apiSummary]);
 
     // Mock data for Inventory Usage Trends (for the chart)
     const inventoryTrends = Array.from({ length: 14 }, (_, index) => ({
@@ -351,12 +409,13 @@ const PerformanceTrends: React.FC = () => {
         wastePercentage: Number((Math.random() * 8 + 2).toFixed(1))
     }));
 
-    // Debug logging
-    console.log('Selected dates:', selectedDates);
-    console.log('All daily data:', allDailyData);
-    console.log('Filtered daily data:', dailyData);
-    console.log('Calculated summary:', summary);
-    console.log('API summary:', apiSummary);
+    // Debug logging (commented out for performance)
+    // console.log('Selected dates:', selectedDates);
+    // console.log('Available API dates:', Object.keys(data?.daily_breakdown || {}));
+    // console.log('All daily data:', allDailyData);
+    // console.log('Filtered daily data:', dailyData);
+    // console.log('Calculated summary:', summary);
+    // console.log('API summary:', apiSummary);
 
     return (
         <Box sx={{ 
@@ -936,9 +995,11 @@ const PerformanceTrends: React.FC = () => {
                                                     setStartDate(null);
                                                     setEndDate(null);
                                                     setSelectedRange({
-                                                        startDate: "3/9/2025",
-                                                        endDate: "6/9/2025",
+                                                        startDate: "",
+                                                        endDate: "",
                                                     });
+                                                    // Instantly clear data for immediate empty state
+                                                    setData(null);
                                                 }}
                                                 sx={{
                                                     color: '#dc2626',
