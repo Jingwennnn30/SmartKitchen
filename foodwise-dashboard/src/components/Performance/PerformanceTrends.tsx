@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ReportGenerationDialog from './ReportGenerationDialog';
 import {
     Box,
     Typography,
@@ -111,10 +112,11 @@ const PerformanceTrends: React.FC = () => {
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
     const [orderDetails, setOrderDetails] = useState<any[]>([]);
     const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
     const handleExportPDF = () => {
-        // PDF export logic would go here
-        console.log('Exporting to PDF...');
+        // Open the professional report generation dialog
+        setReportDialogOpen(true);
     };
 
     // Load performance data from API with caching
@@ -1950,6 +1952,13 @@ const PerformanceTrends: React.FC = () => {
                     </Box>
                 </DialogContent>
             </Dialog>
+
+            {/* Report Generation Dialog */}
+            <ReportGenerationDialog
+                open={reportDialogOpen}
+                onClose={() => setReportDialogOpen(false)}
+                data={data}
+            />
         </Box>
     );
 };
