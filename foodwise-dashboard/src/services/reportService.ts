@@ -6,7 +6,7 @@ export interface ReportDataPayload {
   endDate?: string;
 }
 
-const API_BASE = process.env.REACT_APP_API_BASE || '/api';
+const API_BASE = 'https://1ecbj21zed.execute-api.us-east-1.amazonaws.com/dev';
 
 export class ReportService {
   /**
@@ -54,11 +54,45 @@ export class ReportService {
   }
 
   static async generateWeeklyReport(data: { selectedStartDate?: string; selectedEndDate?: string }): Promise<void> {
-    return this.generateReport('weekly', data.selectedStartDate, data.selectedEndDate);
+    // For weekly reports, use current week if no dates selected
+    const startDate = data.selectedStartDate || this.getWeekStart();
+    const endDate = data.selectedEndDate || this.getWeekEnd();
+    return this.generateReport('weekly', startDate, endDate);
   }
 
   static async generateMonthlyReport(data: { selectedStartDate?: string; selectedEndDate?: string }): Promise<void> {
-    return this.generateReport('monthly', data.selectedStartDate, data.selectedEndDate);
+    // For monthly reports, use current month if no dates selected
+    const startDate = data.selectedStartDate || this.getMonthStart();
+    const endDate = data.selectedEndDate || this.getMonthEnd();
+    return this.generateReport('monthly', startDate, endDate);
+  }
+
+  private static getWeekStart(): string {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diff = now.getDate() - dayOfWeek;
+    const weekStart = new Date(now.setDate(diff));
+    return `${weekStart.getDate()}/${weekStart.getMonth() + 1}/${weekStart.getFullYear()}`;
+  }
+
+  private static getWeekEnd(): string {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diff = now.getDate() - dayOfWeek + 6;
+    const weekEnd = new Date(now.setDate(diff));
+    return `${weekEnd.getDate()}/${weekEnd.getMonth() + 1}/${weekEnd.getFullYear()}`;
+  }
+
+  private static getMonthStart(): string {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return `${monthStart.getDate()}/${monthStart.getMonth() + 1}/${monthStart.getFullYear()}`;
+  }
+
+  private static getMonthEnd(): string {
+    const now = new Date();
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return `${monthEnd.getDate()}/${monthEnd.getMonth() + 1}/${monthEnd.getFullYear()}`;
   }
 
   /**
@@ -73,7 +107,7 @@ export class ReportService {
     if (startDate) payload.startDate = startDate;
     if (endDate) payload.endDate = endDate;
 
-    const response = await fetch(`${API_BASE}/report/generate`, {
+    const response = await fetch(`${API_BASE}/report`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -134,9 +134,16 @@ const PerformanceTrends: React.FC = () => {
             setLoading(true);
             const result = await fetchPerformanceData(selectedRange.startDate, selectedRange.endDate);
             
+            // Add selected date range to result for report generation
+            const enrichedResult = {
+                ...result,
+                selectedStartDate: selectedRange.startDate,
+                selectedEndDate: selectedRange.endDate
+            };
+            
             // Cache the result
-            setDataCache(prev => new Map(prev).set(cacheKey, result));
-            setData(result);
+            setDataCache(prev => new Map(prev).set(cacheKey, enrichedResult));
+            setData(enrichedResult);
         } catch (err) {
             console.error("Error fetching performance data:", err);
         } finally {

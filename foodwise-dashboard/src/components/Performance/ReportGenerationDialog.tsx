@@ -80,7 +80,11 @@ const ReportGenerationDialog: React.FC<ReportGenerationDialogProps> = ({
 
   const handleGenerateReport = async (type: 'daily' | 'weekly' | 'monthly') => {
     try {
-      if (!data) return;
+      if (!data) {
+        setError('No data available for report generation. Please select dates first.');
+        return;
+      }
+      
       setError(null);
       setSuccess(null);
       setGeneratingReport(type);
@@ -90,22 +94,25 @@ const ReportGenerationDialog: React.FC<ReportGenerationDialogProps> = ({
         selectedEndDate: data.selectedEndDate
       };
 
+      console.log(`Generating ${type} report with data:`, datePayload);
+
       switch (type) {
         case 'daily':
           await ReportService.generateDailyReport(datePayload);
-          setSuccess('Daily report generated successfully!');
+          setSuccess('Daily report generated and downloaded successfully! Check your downloads folder.');
           break;
         case 'weekly':
           await ReportService.generateWeeklyReport(datePayload);
-          setSuccess('Weekly report generated successfully!');
+          setSuccess('Weekly report generated and downloaded successfully! Check your downloads folder.');
           break;
         case 'monthly':
           await ReportService.generateMonthlyReport(datePayload);
-          setSuccess('Monthly report generated successfully!');
+          setSuccess('Monthly report generated and downloaded successfully! Check your downloads folder.');
           break;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate report');
+      console.error('Report generation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate report. Please try again.');
     } finally {
       setGeneratingReport(null);
     }
