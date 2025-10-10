@@ -31,10 +31,13 @@ export interface SupplierOrderType {
     supplier: Supplier;
     items: OrderItem[];
     totalAmount: number;
-    status: 'pending' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
+    status: 'pending' | 'approved' | 'rejected' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
     orderDate: string;
     expectedDelivery: string;
     orderedBy: string;
+    orderMethod: 'voice-assistant' | 'manual';
+    approvedBy?: string;
+    approvalDate?: string;
     notes?: string;
 }
 
@@ -52,14 +55,110 @@ export interface CreateOrderRequest {
 
 export interface UpdateOrderStatusRequest {
     orderId: string;
-    status: 'pending' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
+    status: 'pending' | 'approved' | 'rejected' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
     notes?: string;
 }
 
 // Mock API base URL - replace with actual endpoint
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://your-api-endpoint.com/api';
+const BACKEND_BASE_URL = "http://localhost:4000";
 
 class SupplierOrderService {
+    
+    // Fetch orders from DynamoDB order-stock table
+    async fetchOrderStockData(): Promise<SupplierOrderType[]> {
+        try {
+            console.log("🔗 Fetching order stock data from DynamoDB...");
+            
+            const response = await fetch(`${BACKEND_BASE_URL}/api/order-stock`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                }
+            });
+            
+            console.log("📡 Order stock response status:", response.status);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch order stock data: ${response.status}`);
+            }
+            
+            const rawData = await response.json();
+            console.log("📦 Raw order stock data:", rawData);
+            
+            // Transform raw DynamoDB data to match SupplierOrderType interface
+            const transformedData: SupplierOrderType[] = rawData.map((order: any) => {
+                console.log("🔧 Transforming order:", order);
+                
+                // The API already returns the correct format, just use it directly
+                return {
+                    id: order.id,
+                    orderNumber: order.orderNumber, // Keep the backend format (AWS-xxxxx)
+                    supplier: order.supplier, // Use backend supplier data
+                    items: order.items, // Items are already in correct format from API
+                    totalAmount: order.totalAmount,
+                    status: order.status,
+                    orderDate: order.orderDate,
+                    expectedDelivery: order.expectedDelivery,
+                    orderedBy: order.orderedBy, // Use backend value (Voice Assistant)
+                    orderMethod: order.orderMethod, // Use backend value (voice-assistant)
+                    approvedBy: order.approvedBy,
+                    approvalDate: order.approvalDate,
+                    notes: order.notes
+                };
+            });
+            
+            console.log("✅ Transformed order stock data:", transformedData);
+            return transformedData;
+            
+        } catch (error) {
+            console.error("❌ Error fetching order stock data:", error);
+            return [];
+        }
+    }
+    
+    // Update order status in DynamoDB
+    async updateOrderStatus(orderId: string, status: 'PENDING' | 'APPROVED' | 'REJECTED', approvedBy: string): Promise<boolean> {
+        try {
+            console.log(`🔄 Updating order ${orderId} status to ${status} by ${approvedBy}`);
+            console.log(`📡 API URL: ${BACKEND_BASE_URL}/api/order-stock/${orderId}/status`);
+            
+            const requestBody = {
+                status: status,
+                approvedBy: approvedBy
+            };
+            console.log(`📦 Request body:`, requestBody);
+            
+            const response = await fetch(`${BACKEND_BASE_URL}/api/order-stock/${orderId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            console.log("📡 Update order status response status:", response.status);
+            console.log("📡 Response headers:", response.headers);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`❌ API Error Response:`, errorText);
+                throw new Error(`Failed to update order status: ${response.status} - ${errorText}`);
+            }
+            
+            const result = await response.json();
+            console.log("✅ Order status updated successfully:", result);
+            
+            return true;
+            
+        } catch (error) {
+            console.error("❌ Error updating order status:", error);
+            console.error("❌ Error details:", error instanceof Error ? error.message : String(error));
+            return false;
+        }
+    }
     
     // Get all suppliers
     async getSuppliers(): Promise<Supplier[]> {
@@ -149,31 +248,6 @@ class SupplierOrderService {
             return await response.json();
         } catch (error) {
             console.error('Error creating order:', error);
-            throw error;
-        }
-    }
-
-    // Update order status
-    async updateOrderStatus(updateData: UpdateOrderStatusRequest): Promise<SupplierOrderType> {
-        try {
-            const response = await fetch(`${API_BASE_URL}/supplier-orders/${updateData.orderId}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    status: updateData.status,
-                    notes: updateData.notes,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Error updating order status:', error);
             throw error;
         }
     }
