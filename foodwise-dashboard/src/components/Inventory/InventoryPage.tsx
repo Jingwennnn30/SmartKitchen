@@ -14,6 +14,7 @@ import InventoryTable from './InventoryTable';
 import StockLevelChart from './StockLevelChart';
 import SeasonalityIndicators from './SeasonalityIndicators';
 import PredictedRestockTable from './PredictedRestockTable';
+import SeasoningItemTable from './SeasoningItemTable';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -107,6 +108,11 @@ const InventoryPage = () => {
             {/* Predicted Restock Order */}
             <StyledPaper sx={{ mb: 3 }}>
                 <PredictedRestockTable />
+            </StyledPaper>
+
+            {/* Seasoning Item Order */}
+            <StyledPaper sx={{ mb: 3 }}>
+                <SeasoningItemTable />
             </StyledPaper>
 
             {/* Current Stock */}
