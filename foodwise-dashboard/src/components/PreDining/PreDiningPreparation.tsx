@@ -1,3 +1,4 @@
+// src/components/PreDiningPreparation.tsx (Full Component)
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -18,12 +19,17 @@ import {
     FormControl,
     Skeleton,
     CircularProgress,
+    Collapse,
+    Button,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import InfoIcon from '@mui/icons-material/Info';
 import { ForecastResponse, getForecastData } from '../../services/prediningPreparationService';
 
 interface PreparationItem {
@@ -31,6 +37,7 @@ interface PreparationItem {
   ingredients: string[];
   prepTime: string;
   quantity: number;
+  explanation: string;
   action?: 'completed' | 'preparing' | 'not-started' | null;
 }
 
@@ -40,7 +47,9 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
     boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)'
 }));
 
-const ActionChip = styled(Chip)<{ actionType: string }>(({ actionType }) => ({
+const ActionChip = styled(Chip, {
+    shouldForwardProp: (prop) => prop !== 'actionType',
+})<{ actionType: string }>(({ actionType }) => ({
     fontSize: '11px',
     fontWeight: 'bold',
     height: '20px',
@@ -77,6 +86,29 @@ const StyledSelect = styled(Select)(() => ({
     }
 }));
 
+const ExplanationBox = styled(Box)(({ theme }) => ({
+    backgroundColor: '#f8f9fa',
+    padding: theme.spacing(2),
+    borderRadius: '8px',
+    border: '1px solid #e9ecef',
+    marginTop: theme.spacing(1),
+    fontSize: '14px',
+    color: '#495057',
+    lineHeight: 1.5,
+}));
+
+const ExpandButton = styled(Button)(({ theme }) => ({
+    minWidth: 'auto',
+    padding: '4px 8px',
+    fontSize: '12px',
+    textTransform: 'none',
+    color: theme.palette.primary.main,
+    '&:hover': {
+        backgroundColor: 'transparent',
+        color: theme.palette.primary.dark,
+    }
+}));
+
 const getStatusIcon = (action: PreparationItem['action']) => {
     switch (action) {
         case 'completed':
@@ -105,29 +137,61 @@ const PreDiningPreparation: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [items, setItems] = useState<PreparationItem[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+    
+    const [forecastData, setForecastData] = useState<ForecastResponse | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string>(() => {
+        // Default to tomorrow (Oct 11, 2025)
+        const today = new Date('2025-10-10');
+        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        return tomorrow.toISOString().split('T')[0];
+    });
 
+    const fetchData = async (customDate?: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const dateToUse = customDate || selectedDate;
+            const data = await getForecastData(dateToUse);
+            setForecastData(data);
+            console.log("✅ Data loaded:", data);
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+            console.error("❌ Error fetching forecast:", err);
+            setError(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Don't auto-fetch on mount - let user choose date and click button
+
+    // Transform forecast data to items when forecastData changes
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const forecast: ForecastResponse = await getForecastData();
-                const mappedItems: PreparationItem[] = forecast.top_dishes.map((dish) => ({
-                    menu: dish.dishName,
-                    ingredients: dish.ingredients,
-                    prepTime: "Before Lunch Peak",
-                    quantity: dish.forecast_sales,
-                    action: 'not-started'
-                }));
-                setItems(mappedItems);
-            } catch (err) {
-                console.error("Error fetching forecast:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+        if (forecastData) {
+            const getIngredients = (dishName: string): string[] => {
+                const lowerName = dishName.toLowerCase();
+                if (lowerName.includes('chicken')) return ['chicken breast', 'herbs', 'spices'];
+                if (lowerName.includes('burger')) return ['beef patty', 'bun', 'lettuce', 'tomato'];
+                if (lowerName.includes('pasta')) return ['pasta', 'vegetables', 'sauce'];
+                if (lowerName.includes('tofu')) return ['tofu', 'vegetables', 'soy sauce'];
+                return ['mixed ingredients'];
+            };
+
+            const mappedItems: PreparationItem[] = forecastData.top_4_main_course.map((dish) => ({
+                menu: dish.dishName,
+                ingredients: getIngredients(dish.dishName),
+                prepTime: "Before Lunch Peak",
+                quantity: Math.round(dish.predicted_sales),
+                explanation: dish.explanation,
+                action: 'not-started'
+            }));
+            
+            setItems(mappedItems);
+        }
+    }, [forecastData]);
 
     const handleActionChange = (filteredIndex: number, action: PreparationItem['action']) => {
         const filteredData = items.filter(item =>
@@ -142,6 +206,16 @@ const PreDiningPreparation: React.FC = () => {
         updatedItems[actualIndex].action = action;
         setItems(updatedItems);
         setEditingIndex(null);
+    };
+
+    const toggleExpansion = (index: number) => {
+        const newExpanded = new Set(expandedRows);
+        if (newExpanded.has(index)) {
+            newExpanded.delete(index);
+        } else {
+            newExpanded.add(index);
+        }
+        setExpandedRows(newExpanded);
     };
 
     const filteredData = items.filter(item =>
@@ -167,23 +241,47 @@ const PreDiningPreparation: React.FC = () => {
                             Preparation Tasks
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            Ensure all items are prepared before their designated times
+                            Forecast for {forecastData?.date || selectedDate} - Ensure all items are prepared before their designated times
                         </Typography>
                     </Box>
-                    <TextField
-                        size="small"
-                        placeholder="Search menu or ingredients..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon />
-                                </InputAdornment>
-                            ),
-                        }}
-                        sx={{ width: 250 }}
-                    />
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <TextField
+                            size="small"
+                            type="date"
+                            label="Forecast Date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            sx={{ width: 150 }}
+                        />
+                        <TextField
+                            size="small"
+                            placeholder="Search menu or ingredients..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon />
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{ width: 250 }}
+                        />
+                        <Button 
+                            variant="contained" 
+                            size="small" 
+                            onClick={() => fetchData()}
+                            disabled={loading}
+                        >
+                            {loading ? 'Loading...' : 'Get Forecast'}
+                        </Button>
+                        {error && (
+                            <Typography variant="caption" color="error" sx={{ ml: 1, maxWidth: 200 }}>
+                                {error}
+                            </Typography>
+                        )}
+                    </Box>
                 </Box>
 
                 <TableContainer>
@@ -191,75 +289,113 @@ const PreDiningPreparation: React.FC = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell>Menu</TableCell>
-                                <TableCell>Quantity</TableCell>
+                                <TableCell>Predicted Qty</TableCell>
                                 <TableCell>Ingredients</TableCell>
                                 <TableCell>Preparation Time</TableCell>
                                 <TableCell align="center">Action</TableCell>
                                 <TableCell align="center">Status</TableCell>
+                                <TableCell align="center">Explanation</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {loading ? (
                                 // Skeleton rows
-                                Array.from(new Array(5)).map((_, i) => (
+                                Array.from(new Array(4)).map((_, i) => (
                                     <TableRow key={i}>
                                         <TableCell><Skeleton variant="text" width={120} /></TableCell>
-                                        <TableCell><Skeleton variant="text" width={40} /></TableCell>
+                                        <TableCell><Skeleton variant="rectangular" width={50} height={24} /></TableCell>
                                         <TableCell><Skeleton variant="rectangular" width={180} height={24} /></TableCell>
                                         <TableCell><Skeleton variant="text" width={100} /></TableCell>
                                         <TableCell align="center"><Skeleton variant="rounded" width={80} height={24} /></TableCell>
                                         <TableCell align="center"><Skeleton variant="circular" width={24} height={24} /></TableCell>
+                                        <TableCell align="center"><Skeleton variant="rounded" width={60} height={24} /></TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 filteredData.map((item, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{item.menu}</TableCell>
-                                        <TableCell>{item.quantity}</TableCell>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                                {item.ingredients.map((ingredient, i) => (
-                                                    <Chip
-                                                        key={i}
-                                                        label={ingredient}
-                                                        size="small"
-                                                        variant="outlined"
-                                                    />
-                                                ))}
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>{item.prepTime}</TableCell>
-                                        <TableCell align="center">
-                                            {editingIndex === index ? (
-                                                <FormControl size="small" sx={{ minWidth: 120 }}>
-                                                    <StyledSelect
-                                                        value={item.action || 'not-started'}
-                                                        onChange={(e) => handleActionChange(index, e.target.value as PreparationItem['action'])}
-                                                        onBlur={() => setEditingIndex(null)}
-                                                        displayEmpty
-                                                        autoFocus
-                                                    >
-                                                        <MenuItem value="not-started">Not Started</MenuItem>
-                                                        <MenuItem value="preparing">Preparing</MenuItem>
-                                                        <MenuItem value="completed">Completed</MenuItem>
-                                                    </StyledSelect>
-                                                </FormControl>
-                                            ) : (
-                                                <Box onClick={() => setEditingIndex(index)} sx={{ cursor: 'pointer' }}>
-                                                    <ActionChip 
-                                                        actionType={item.action || 'not-started'}
-                                                        label={getActionLabel(item.action) || 'Not Started'}
-                                                        size="small"
-                                                    />
+                                    <React.Fragment key={index}>
+                                        <TableRow>
+                                            <TableCell>
+                                                <Typography variant="body2" fontWeight="medium">
+                                                    {item.menu}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip 
+                                                    label={item.quantity} 
+                                                    size="small" 
+                                                    color="primary" 
+                                                    variant="outlined"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                                    {item.ingredients.map((ingredient, i) => (
+                                                        <Chip
+                                                            key={i}
+                                                            label={ingredient}
+                                                            size="small"
+                                                            variant="outlined"
+                                                        />
+                                                    ))}
                                                 </Box>
-                                            )}
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <IconButton size="small">
-                                                {getStatusIcon(item.action)}
-                                            </IconButton>
-                                        </TableCell>
-                                    </TableRow>
+                                            </TableCell>
+                                            <TableCell>{item.prepTime}</TableCell>
+                                            <TableCell align="center">
+                                                {editingIndex === index ? (
+                                                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                        <StyledSelect
+                                                            value={item.action || 'not-started'}
+                                                            onChange={(e) => handleActionChange(index, e.target.value as PreparationItem['action'])}
+                                                            onBlur={() => setEditingIndex(null)}
+                                                            displayEmpty
+                                                            autoFocus
+                                                        >
+                                                            <MenuItem value="not-started">Not Started</MenuItem>
+                                                            <MenuItem value="preparing">Preparing</MenuItem>
+                                                            <MenuItem value="completed">Completed</MenuItem>
+                                                        </StyledSelect>
+                                                    </FormControl>
+                                                ) : (
+                                                    <Box onClick={() => setEditingIndex(index)} sx={{ cursor: 'pointer' }}>
+                                                        <ActionChip 
+                                                            actionType={item.action || 'not-started'}
+                                                            label={getActionLabel(item.action) || 'Not Started'}
+                                                            size="small"
+                                                        />
+                                                    </Box>
+                                                )}
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <IconButton size="small">
+                                                    {getStatusIcon(item.action)}
+                                                </IconButton>
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <ExpandButton
+                                                    onClick={() => toggleExpansion(index)}
+                                                    startIcon={<InfoIcon />}
+                                                    endIcon={expandedRows.has(index) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                                >
+                                                    {expandedRows.has(index) ? 'Hide' : 'Why?'}
+                                                </ExpandButton>
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell colSpan={7} sx={{ padding: 0, border: 'none' }}>
+                                                <Collapse in={expandedRows.has(index)} timeout="auto" unmountOnExit>
+                                                    <Box sx={{ padding: 2, backgroundColor: '#f8f9fa' }}>
+                                                        <Typography variant="body2" fontWeight="medium" gutterBottom>
+                                                            Forecast Explanation:
+                                                        </Typography>
+                                                        <ExplanationBox>
+                                                            {item.explanation}
+                                                        </ExplanationBox>
+                                                    </Box>
+                                                </Collapse>
+                                            </TableCell>
+                                        </TableRow>
+                                    </React.Fragment>
                                 ))
                             )}
                         </TableBody>
