@@ -485,7 +485,7 @@ const PerformanceTrends: React.FC = () => {
                 <Grid item xs={12} md={4}>
                     <StyledPaper>
                         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 1 }}>
-                            🤖 AI-Enhanced Staff Efficiency
+                            AI-Enhanced Staff Efficiency
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
                             How AI technology improves kitchen operations
@@ -591,7 +591,6 @@ const PerformanceTrends: React.FC = () => {
                                         +42% faster
                                     </Typography>
                                 </Box>
-                                <Typography sx={{ fontSize: '1.2rem' }}>🧠</Typography>
                             </Box>
 
                             <Box sx={{ 
@@ -611,7 +610,6 @@ const PerformanceTrends: React.FC = () => {
                                         -38% wait time
                                     </Typography>
                                 </Box>
-                                <Typography sx={{ fontSize: '1.2rem' }}>🚀</Typography>
                             </Box>
 
                             <Box sx={{ 
@@ -631,7 +629,6 @@ const PerformanceTrends: React.FC = () => {
                                         97% accuracy
                                     </Typography>
                                 </Box>
-                                <Typography sx={{ fontSize: '1.2rem' }}>📊</Typography>
                             </Box>
                         </Box>
                         
@@ -656,7 +653,7 @@ const PerformanceTrends: React.FC = () => {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
                             <Box>
                                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 1 }}>
-                                    💰 Cost & Waste Analysis
+                                    Cost & Waste Analysis
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#6b7280' }}>
                                     Monitor food costs and waste reduction trends over time
@@ -1627,7 +1624,7 @@ const PerformanceTrends: React.FC = () => {
                 <Grid item xs={12} md={6}>
                     <StyledPaper>
                         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 2 }}>
-                            📈 Stock vs Usage Trends
+                            Stock vs Usage Trends
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
                             Track inventory levels against daily usage patterns
@@ -1718,7 +1715,7 @@ const PerformanceTrends: React.FC = () => {
                 <Grid item xs={12} md={6}>
                     <StyledPaper>
                         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 2 }}>
-                            ⏱️ Average Wait Time Trends
+                            Average Wait Time Trends
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>
                             Monitor customer service efficiency and wait times

@@ -10,10 +10,22 @@ from decimal import Decimal
 import urllib.request
 import urllib.parse
 import urllib.error
+import re
 
 # Configuration
 BUCKET_NAME = os.environ.get('REPORTS_BUCKET', 'smartkitchen-reports')
 TABLE_NAME = 'sales_2025_sep_oct'  # Your actual DynamoDB table
+
+# AI Model Configuration
+BEDROCK_REGION = "us-east-1"
+MODEL_ID = "meta.llama3-8b-instruct-v1:0"
+
+# Initialize Bedrock client for AI analysis
+bedrock_runtime = boto3.client(
+    "bedrock-runtime",
+    region_name=BEDROCK_REGION,
+    endpoint_url="https://bedrock-runtime.us-east-1.amazonaws.com"
+)
 
 def get_theme_colors(report_type):
     """Get color theme based on report type - executive visual distinction"""
@@ -919,6 +931,45 @@ def generate_html_report(report_type, start_date, end_date, data):
         font-weight: 500;
         border: 1px solid #bbf7d0;
     }}
+    /* AI Analysis Formatting Styles */
+    .ai-analysis-formatted {{
+        line-height: 1.7;
+        color: #1e293b;
+    }}
+    .ai-section-block {{
+        margin-bottom: 25px;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 4px solid {theme['primary']};
+    }}
+    .ai-section-title {{
+        color: {theme['primary']};
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid {theme['light']};
+    }}
+    .ai-paragraph {{
+        margin-bottom: 12px;
+        text-align: justify;
+        color: #374151;
+        font-size: 0.95em;
+    }}
+    .ai-section-block ul {{
+        margin: 10px 0;
+        padding-left: 20px;
+    }}
+    .ai-section-block li {{
+        margin: 8px 0;
+        color: #4b5563;
+        line-height: 1.6;
+    }}
+    .ai-section-block li.numbered-item {{
+        font-weight: 500;
+        color: {theme['secondary']};
+    }}
 </style>
 </head>
 <body>
@@ -1115,8 +1166,11 @@ if (document.getElementById('hourlyChart')) {{
 
 
 def create_performance_summary(data):
-    """Create detailed performance insights with enhanced visual presentation"""
+    """Create detailed performance insights with AI-generated recommendations"""
     
+    report_type = data.get('report_type', 'daily')
+    
+    # Extract all needed variables first to avoid scope issues
     total_orders = data.get('total_orders', 0)
     total_revenue = data.get('total_revenue', 0)
     avg_order_value = data.get('avg_order_value', 0)
@@ -1124,8 +1178,36 @@ def create_performance_summary(data):
     peak_hour = data.get('peak_hour', 12)
     daily_avg = data.get('daily_avg_orders', 0)
     
-    # Create enhanced insights with supporting metrics
-    insights_data = []
+    # Try to get AI-generated recommendations first
+    ai_recommendations = generate_ai_recommendations_section(data, report_type)
+    
+    if ai_recommendations and len(ai_recommendations) >= 6:
+        print(f"Using AI-generated recommendations: {len(ai_recommendations)} items")
+        insights_data = []
+        
+        # Map AI recommendations to insight format with appropriate icons
+        icon_map = {
+            'Revenue Performance': '💰',
+            'Operational Consistency': '📊', 
+            'High-Volume Operations': '🚀',
+            'Customer Dining Patterns': '👥',
+            'Peak Operations Excellence': '🌟',
+            'Smart Kitchen AI Integration': '🤖'
+        }
+        
+        for rec in ai_recommendations[:6]:
+            icon = icon_map.get(rec['title'], '💡')
+            insights_data.append({
+                'icon': icon,
+                'title': rec['title'],
+                'detail': rec['detail'],
+                'metric': rec['metric']
+            })
+    
+    else:
+        print("Using fallback insights - AI recommendations failed or insufficient")
+        # Create enhanced insights with supporting metrics (fallback)
+        insights_data = []
     
     # Revenue performance analysis
     if total_revenue > 0:
@@ -1429,10 +1511,101 @@ def create_charts_data(data):
 
 
 def generate_ai_analysis(report_type, data, start_date, end_date):
-    """Generate comprehensive AI analysis with different insights for each report type"""
+    """Generate comprehensive AI analysis using real Llama 3 model"""
+    
+    try:
+        # Extract key metrics from data
+        total_orders = data.get('total_orders', 0)
+        total_revenue = data.get('total_revenue', 0)
+        avg_order_value = data.get('avg_order_value', 0)
+        peak_hour = data.get('peak_hour', 12)
+        daily_avg_orders = data.get('daily_avg_orders', 0)
+        staff_efficiency = data.get('staff_efficiency', 87)
+        
+        # Create detailed prompt for AI analysis based on report type
+        base_context = f"""
+        You are an expert restaurant business analyst with deep knowledge of food service operations, customer behavior patterns, and performance optimization. Analyze the following restaurant performance data and provide professional insights.
 
-    # Always use the mature fallback analysis that's different for each report type
-    return generate_smart_ai_analysis(report_type, data, start_date, end_date)
+        PERFORMANCE DATA:
+        - Report Period: {start_date} to {end_date}
+        - Report Type: {report_type.title()}
+        - Total Orders: {total_orders}
+        - Total Revenue: RM {total_revenue:,.2f}
+        - Average Order Value: RM {avg_order_value:.2f}
+        - Peak Hour: {peak_hour}:00
+        - Daily Average Orders: {daily_avg_orders:.1f}
+        - Staff Efficiency: {staff_efficiency}%
+        """
+
+        if report_type == 'daily':
+            prompt = base_context + f"""
+            
+            Provide a comprehensive daily performance analysis covering:
+            1. Overall Performance Assessment (2-3 sentences)
+            2. Key Insights & Patterns (3-4 bullet points)
+            3. Operational Recommendations (2-3 actionable suggestions)
+            4. Tomorrow's Focus Areas (2-3 specific priorities)
+            
+            Focus on immediate actionable insights for daily operations. Be specific about what the restaurant should focus on for the next day.
+            """
+        elif report_type == 'weekly':
+            prompt = base_context + f"""
+            
+            Provide a comprehensive weekly performance analysis covering:
+            1. Weekly Performance Summary (2-3 sentences)
+            2. Trend Analysis & Patterns (3-4 bullet points about weekly patterns)
+            3. Strategic Recommendations (3-4 medium-term suggestions)
+            4. Next Week's Priorities (2-3 focus areas for improvement)
+            
+            Focus on weekly trends, customer patterns, and strategic adjustments for next week.
+            """
+        else:  # monthly
+            prompt = base_context + f"""
+            
+            Provide a comprehensive monthly performance analysis covering:
+            1. Monthly Performance Overview (2-3 sentences)
+            2. Long-term Trends & Insights (4-5 bullet points about monthly patterns)
+            3. Strategic Growth Opportunities (3-4 long-term recommendations)
+            4. Next Month's Strategic Focus (3-4 high-impact priorities)
+            
+            Focus on long-term trends, growth opportunities, and strategic planning for sustainable business growth.
+            """
+
+        # Call Llama 3 model for AI analysis
+        response = bedrock_runtime.invoke_model(
+            modelId=MODEL_ID,
+            body=json.dumps({
+                "prompt": f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
+                "max_gen_len": 800,
+                "temperature": 0.7,
+                "top_p": 0.9
+            }),
+            contentType="application/json",
+            accept="application/json"
+        )
+        
+        result = json.loads(response["body"].read())
+        ai_analysis = result.get("generation", "").strip()
+        
+        print(f"AI Analysis Generated for {report_type} report: {ai_analysis[:200]}...")
+        
+        # Clean up AI output and format for HTML
+        ai_analysis = re.sub(r'^[\*\"\'\s]+|[\*\"\'\s]+$', '', ai_analysis)
+        ai_analysis = ai_analysis.replace('**', '').replace('\\"', '"').strip()
+        
+        # If AI analysis is too short or empty, fallback to structured analysis
+        if len(ai_analysis) < 100:
+            return generate_smart_ai_analysis(report_type, data, start_date, end_date)
+        
+        # Format the AI analysis for better readability
+        formatted_analysis = format_ai_analysis_content(ai_analysis)
+        return formatted_analysis
+        
+    except Exception as e:
+        print(f"AI Analysis generation failed: {str(e)}")
+        print(f"Fallback to structured analysis for {report_type} report")
+        # Fallback to original structured analysis
+        return generate_smart_ai_analysis(report_type, data, start_date, end_date)
 
 
 def generate_smart_ai_analysis(report_type, data, start_date, end_date):
@@ -1492,12 +1665,12 @@ def generate_weekly_ai_insights(theme, total_orders, total_revenue, avg_order_va
     analysis = f"""
     <div class="ai-analysis-grid" style="background: {theme['bg_gradient']}; padding: 25px; border-radius: 15px; border-left: 5px solid {theme['primary']};">
         <div class="analysis-section">
-            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">� Weekly Trends</div>
+            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">  Weekly Trends</div>
             <div class="section-content">{weekly_trend} with {total_orders} orders generating RM {total_revenue:,.2f} across 7 days. AI identified 3 customer behavior patterns, increasing repeat visits by 31%.</div>
         </div>
         
         <div class="analysis-section">
-            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">� Pattern Analysis</div>
+            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">  Pattern Analysis</div>
             <div class="section-content">Weekly peak at {peak_hour}:00 shows {pattern_analysis} with RM {avg_order_value:.2f} average orders. AI detected mid-week revenue opportunity (+25% potential) through targeted promotions.</div>
         </div>
         
@@ -1549,8 +1722,234 @@ def generate_monthly_ai_insights(theme, total_orders, total_revenue, avg_order_v
     return analysis
 
 
+def generate_ai_section_analysis(section_type, data, report_type):
+    """Generate AI-powered analysis for specific report sections"""
+    
+    try:
+        total_orders = data.get('total_orders', 0)
+        total_revenue = data.get('total_revenue', 0)
+        avg_order_value = data.get('avg_order_value', 0)
+        peak_hour = data.get('peak_hour', 12)
+        
+        section_prompts = {
+            'performance': f"""
+            Analyze this restaurant's performance data and provide a professional assessment in 2-3 sentences:
+            - Orders: {total_orders}
+            - Revenue: RM {total_revenue:,.2f}
+            - Average Order Value: RM {avg_order_value:.2f}
+            
+            Focus on overall performance strength and key indicators of business health.
+            """,
+            'integration': f"""
+            Based on this restaurant data, analyze the impact of AI and smart systems integration in 2-3 sentences:
+            - Current Performance: {total_orders} orders, RM {total_revenue:,.2f} revenue
+            - Peak Operations Hour: {peak_hour}:00
+            
+            Focus on how AI systems like smart ordering, inventory management, and predictive analytics contribute to these results.
+            """,
+            'optimization': f"""
+            Provide revenue optimization insights for this restaurant in 2-3 sentences:
+            - Current AOV: RM {avg_order_value:.2f}
+            - Total Revenue: RM {total_revenue:,.2f}
+            - Order Volume: {total_orders}
+            
+            Focus on specific strategies to improve average order value and revenue per customer.
+            """
+        }
+        
+        prompt = section_prompts.get(section_type, section_prompts['performance'])
+        
+        # Call Llama 3 model
+        response = bedrock_runtime.invoke_model(
+            modelId=MODEL_ID,
+            body=json.dumps({
+                "prompt": f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
+                "max_gen_len": 200,
+                "temperature": 0.6,
+                "top_p": 0.8
+            }),
+            contentType="application/json",
+            accept="application/json"
+        )
+        
+        result = json.loads(response["body"].read())
+        ai_output = result.get("generation", "").strip()
+        
+        # Clean AI output
+        ai_output = re.sub(r'^[\*\"\'\s]+|[\*\"\'\s]+$', '', ai_output)
+        ai_output = ai_output.replace('**', '').replace('\\"', '"').strip()
+        
+        return ai_output if ai_output else None
+        
+    except Exception as e:
+        print(f"AI section analysis failed for {section_type}: {str(e)}")
+        return None
+
+
+def format_ai_analysis_content(ai_content):
+    """Format AI-generated content for better HTML readability"""
+    
+    # Split content into sections and format
+    formatted_content = "<div class='ai-analysis-formatted'>"
+    
+    # Split by common patterns and create structured content
+    sections = []
+    current_section = ""
+    
+    lines = ai_content.split('\n')
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Check if this is a section header (contains keywords like "Assessment", "Insights", "Recommendations", etc.)
+        if any(keyword in line for keyword in ['Assessment:', 'Overview:', 'Insights:', 'Patterns:', 'Recommendations:', 'Focus Areas:', 'Strategic Focus:', 'Summary:']):
+            if current_section:
+                sections.append(current_section)
+            current_section = f"<div class='ai-section-block'><h4 class='ai-section-title'>{line}</h4>"
+        elif line.startswith('*') or line.startswith('•') or line.startswith('-'):
+            # This is a bullet point
+            bullet_text = re.sub(r'^[\*\-•]\s*', '', line)
+            current_section += f"<li>{bullet_text}</li>"
+        elif line.startswith(('1.', '2.', '3.', '4.', '5.')):
+            # This is a numbered item
+            number_text = re.sub(r'^\d+\.\s*', '', line)
+            current_section += f"<li class='numbered-item'>{number_text}</li>"
+        else:
+            # Regular paragraph text
+            if '<li>' in current_section and not current_section.endswith('</ul>'):
+                current_section += "</ul>"
+            if '<li>' in line or current_section.endswith('</li>'):
+                if not current_section.endswith('<ul>'):
+                    current_section += "<ul>"
+            else:
+                current_section += f"<p class='ai-paragraph'>{line}</p>"
+    
+    if current_section:
+        sections.append(current_section + "</div>")
+    
+    formatted_content += "".join(sections) + "</div>"
+    
+    # Clean up and fix HTML structure
+    formatted_content = formatted_content.replace('<ul></ul>', '')
+    formatted_content = re.sub(r'<li>(.*?)</li>(?=<p)', r'<li>\1</li></ul><p', formatted_content)
+    formatted_content = re.sub(r'</p>(?=<li)', r'</p><ul>', formatted_content)
+    
+    return formatted_content
+
+
+def generate_ai_recommendations_section(data, report_type):
+    """Generate AI-powered recommendations for the comprehensive dashboard insights section"""
+    
+    try:
+        total_orders = data.get('total_orders', 0)
+        total_revenue = data.get('total_revenue', 0)
+        avg_order_value = data.get('avg_order_value', 0)
+        peak_hour = data.get('peak_hour', 12)
+        staff_efficiency = data.get('staff_efficiency', 87)
+        
+        prompt = f"""
+        You are a restaurant business consultant. Based on this performance data, provide 6 specific, actionable business recommendations in exactly this format.
+        
+        PERFORMANCE DATA:
+        - Report Type: {report_type.title()}
+        - Total Orders: {total_orders}
+        - Total Revenue: RM {total_revenue:,.2f}
+        - Average Order Value: RM {avg_order_value:.2f}
+        - Peak Hour: {peak_hour}:00
+        - Staff Efficiency: {staff_efficiency}%
+        
+        Generate exactly 6 recommendations with these categories:
+        1. Revenue Performance
+        2. Operational Consistency  
+        3. High-Volume Operations
+        4. Customer Dining Patterns
+        5. Peak Operations Excellence
+        6. Smart Kitchen AI Integration
+        
+        For each recommendation, provide:
+        - Title: [Category name]
+        - Detail: [2-3 sentences of specific analysis]
+        - Metric: [One key performance indicator]
+        
+        Format exactly as:
+        Title: Revenue Performance
+        Detail: [Analysis text]
+        Metric: [KPI text]
+        
+        Title: Operational Consistency
+        Detail: [Analysis text]
+        Metric: [KPI text]
+        
+        [Continue for all 6 categories]
+        """
+        
+        # Call Llama 3 model for recommendations
+        response = bedrock_runtime.invoke_model(
+            modelId=MODEL_ID,
+            body=json.dumps({
+                "prompt": f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
+                "max_gen_len": 1000,
+                "temperature": 0.6,
+                "top_p": 0.9
+            }),
+            contentType="application/json",
+            accept="application/json"
+        )
+        
+        result = json.loads(response["body"].read())
+        ai_recommendations = result.get("generation", "").strip()
+        
+        print(f"AI Recommendations Generated: {ai_recommendations[:200]}...")
+        
+        # Parse AI output into structured format
+        recommendations = parse_ai_recommendations(ai_recommendations)
+        
+        if len(recommendations) >= 6:
+            return recommendations
+        else:
+            print("AI recommendations insufficient, using fallback")
+            return None
+            
+    except Exception as e:
+        print(f"AI Recommendations generation failed: {str(e)}")
+        return None
+
+
+def parse_ai_recommendations(ai_output):
+    """Parse AI recommendations output into structured format"""
+    
+    recommendations = []
+    sections = re.split(r'Title:\s*', ai_output)
+    
+    for section in sections[1:]:  # Skip first empty section
+        if 'Detail:' in section and 'Metric:' in section:
+            lines = section.strip().split('\n')
+            title = lines[0].strip()
+            
+            # Extract detail and metric
+            detail_match = re.search(r'Detail:\s*(.*?)(?=Metric:|$)', section, re.DOTALL)
+            metric_match = re.search(r'Metric:\s*(.*?)(?=Title:|$)', section, re.DOTALL)
+            
+            if detail_match and metric_match:
+                detail = detail_match.group(1).strip()
+                metric = metric_match.group(1).strip()
+                
+                # Clean up
+                detail = re.sub(r'\n\s*', ' ', detail).strip()
+                metric = re.sub(r'\n\s*', ' ', metric).strip()
+                
+                recommendations.append({
+                    'title': title,
+                    'detail': detail,
+                    'metric': metric
+                })
+    
+    return recommendations
+
+
 def generate_comprehensive_fallback_analysis(report_type, data, start_date, end_date):
-    """Generate detailed structured fallback analysis covering all dashboard components"""
+    """Generate detailed structured fallback analysis covering all dashboard components with AI enhancement"""
     
     total_orders = data.get('total_orders', 0)
     total_revenue = data.get('total_revenue', 0)
@@ -1558,26 +1957,38 @@ def generate_comprehensive_fallback_analysis(report_type, data, start_date, end_
     peak_hour = data.get('peak_hour', 12)
     daily_avg = data.get('daily_avg_orders', 0)
     
-    # Determine performance indicators
+    # Try to get AI-powered insights for each section
+    ai_performance = generate_ai_section_analysis('performance', data, report_type)
+    ai_integration = generate_ai_section_analysis('integration', data, report_type)
+    ai_optimization = generate_ai_section_analysis('optimization', data, report_type)
+    
+    # Fallback to structured analysis if AI fails
     performance_status = "exceptional" if total_orders > 100 else "strong" if total_orders > 50 else "solid"
     revenue_trend = "exceeding targets" if avg_order_value > 150 else "meeting expectations" if avg_order_value > 100 else "showing growth potential"
     peak_period = "lunch rush optimization" if 11 <= peak_hour <= 14 else "dinner service excellence" if 18 <= peak_hour <= 21 else "strategic off-peak management"
     
+    # Use AI-generated content or fallback to structured content
+    performance_content = ai_performance or f"SmartKitchen demonstrates {performance_status} performance with {total_orders} orders generating RM {total_revenue:,.2f} in revenue. The average order value of RM {avg_order_value:.2f} indicates {revenue_trend}, showcasing effective menu engineering and customer engagement strategies across the analyzed {report_type} period."
+    
+    integration_content = ai_integration or f"AI-enhanced operations maintain 87% staff efficiency with 42% operational speed improvement through smart recipe suggestions. Integrated dashboard components work synergistically, with predictive analytics achieving 97% accuracy while real-time inventory tracking reduces waste by 6.7%."
+    
+    optimization_content = ai_optimization or f"Peak operations at {peak_hour}:00 represent optimal revenue concentration through {peak_period}. Dynamic pricing opportunities exist during high-demand periods, with potential 15-20% revenue increase through targeted upselling and menu optimization strategies."
+
     analysis = f"""
     <div class="ai-analysis-grid">
         <div class="analysis-section">
             <div class="section-header">🎯 Performance Assessment</div>
-            <div class="section-content">SmartKitchen demonstrates {performance_status} performance with {total_orders} orders generating RM {total_revenue:,.2f} in revenue. The average order value of RM {avg_order_value:.2f} indicates {revenue_trend}, showcasing effective menu engineering and customer engagement strategies across the analyzed {report_type} period.</div>
+            <div class="section-content">{performance_content}</div>
         </div>
         
         <div class="analysis-section">
             <div class="section-header">🔄 System Integration Impact</div>
-            <div class="section-content">AI-enhanced operations maintain 87% staff efficiency with 42% operational speed improvement through smart recipe suggestions. Integrated dashboard components work synergistically, with predictive analytics achieving 97% accuracy while real-time inventory tracking reduces waste by 6.7%.</div>
+            <div class="section-content">{integration_content}</div>
         </div>
         
         <div class="analysis-section">
             <div class="section-header">💰 Revenue Optimization</div>
-            <div class="section-content">Peak operations at {peak_hour}:00 represent optimal revenue concentration through {peak_period}. Dynamic pricing opportunities exist during high-demand periods, with potential 15-20% revenue increase through targeted upselling and menu optimization strategies.</div>
+            <div class="section-content">{optimization_content}</div>
         </div>
         
         <div class="analysis-section">
