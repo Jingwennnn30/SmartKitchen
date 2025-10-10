@@ -15,6 +15,7 @@ import PreDiningPreparation from './components/PreDining/PreDiningPreparation';
 import OrderManagement from './components/OrderManagement/OrderManagement';
 import PerformanceTrends from './components/Performance/PerformanceTrends';
 import DonationPage from './components/Donation/DonationPage';
+import SupplierOrder from './components/SupplierOrder/SupplierOrder';
 import Sidebar from './components/Dashboard/Sidebar';
 import Header from './components/shared/Header';
 import { Box } from '@mui/material';
@@ -28,13 +29,28 @@ const theme = createTheme({
       default: '#f5f5f5',
     },
   },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        '*': {
+          boxSizing: 'border-box',
+        },
+        html: {
+          overflowX: 'hidden',
+        },
+        body: {
+          overflowX: 'hidden',
+        },
+      },
+    },
+  },
 });
 
 const AppLayout = () => {
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F8F9FA' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F8F9FA', overflow: 'hidden' }}>
       <Sidebar />
-      <Box sx={{ flexGrow: 1 }}>
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Header />
         <Box
           component="main"
@@ -44,7 +60,9 @@ const AppLayout = () => {
             mt: '64px',
             ml: '240px',
             height: 'calc(100vh - 64px)',
-            overflow: 'auto'
+            overflow: 'auto',
+            maxWidth: 'calc(100vw - 240px)',
+            boxSizing: 'border-box'
           }}
         >
           <Outlet />
@@ -63,6 +81,7 @@ const router = createBrowserRouter(
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/pre-dining" element={<PreDiningPreparation />} />
       <Route path="/order-management" element={<OrderManagement />} />
+      <Route path="/supplier-orders" element={<SupplierOrder />} />
       <Route path="/performance" element={<PerformanceTrends />} />
     </Route>
   )

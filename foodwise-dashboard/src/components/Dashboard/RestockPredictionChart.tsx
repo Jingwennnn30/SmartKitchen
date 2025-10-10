@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography, List, ListItem, ListItemText, Box } from '@mui/material';
+import { Typography, List, ListItem, ListItemText, Box, Card } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const StyledListItem = styled(ListItem)({
@@ -18,25 +18,43 @@ const predictions = [
 
 const RestockPredictionChart: React.FC = () => {
     return (
-        <Card sx={{ height: '400px', p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-                Predicted Restock Summary
-            </Typography>
-            <List>
-                {predictions.map((prediction, index) => (
-                    <StyledListItem key={index}>
-                        <ListItemText
-                            primary={prediction.item}
-                            secondary={
-                                <Box component="span" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span>{prediction.date}</span>
-                                    <span>{prediction.quantity}</span>
-                                </Box>
-                            }
-                        />
-                    </StyledListItem>
-                ))}
-            </List>
+        <Card sx={{ 
+            height: '400px', 
+            p: 2,
+            boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
+            borderRadius: '10px'
+        }}>
+            <Box sx={{ 
+                height: '100%',
+                backgroundColor: '#ffffff',
+                borderRadius: '8px',
+                boxShadow: 'inset 0px 1px 3px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
+                p: 2,
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+                <Typography variant="h6" gutterBottom>
+                    Predicted Restock Summary
+                </Typography>
+                <Box sx={{ flex: 1, overflow: 'auto' }}>
+                    <List sx={{ py: 0 }}>
+                        {predictions.map((prediction, index) => (
+                            <StyledListItem key={index}>
+                                <ListItemText
+                                    primary={prediction.item}
+                                    secondary={
+                                        <Box component="span" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{prediction.date}</span>
+                                            <span>{prediction.quantity}</span>
+                                        </Box>
+                                    }
+                                />
+                            </StyledListItem>
+                        ))}
+                    </List>
+                </Box>
+            </Box>
         </Card>
     );
 };
