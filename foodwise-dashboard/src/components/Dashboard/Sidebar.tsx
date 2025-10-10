@@ -6,6 +6,7 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import WarningIcon from '@mui/icons-material/Warning';
 import DinnerDiningIcon from '@mui/icons-material/DinnerDining';
 import InsightsIcon from '@mui/icons-material/Insights';
+import BusinessIcon from '@mui/icons-material/Business';
 import { styled } from '@mui/material/styles';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -66,6 +67,7 @@ const sidebarItems = [
     { title: 'Dashboard', icon: <GridViewIcon />, path: '/' },
     { title: 'Inventory', icon: <LocalShippingIcon />, path: '/inventory' },
     { title: 'Order Management', icon: <RestaurantIcon />, path: '/order-management' },
+    { title: 'Supplier Orders', icon: <BusinessIcon />, path: '/supplier-orders' },
     { title: 'Near Expired Items', icon: <WarningIcon />, path: '/near-expired-items' },
     { title: 'Pre-dining Preparation', icon: <DinnerDiningIcon />, path: '/pre-dining' },
     { title: 'Performance & Trends', icon: <InsightsIcon />, path: '/performance' },

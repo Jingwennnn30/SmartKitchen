@@ -1,16 +1,12 @@
-import React from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Paper, Card } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import KPICard from './KPICard';
-import InventoryTable from './InventoryTable';
-import StockUsageChart from './StockUsageChart';
-import FoodWasteChart from './FoodWasteChart';
+import QuickSightFoodWasteChart from './QuickSightFoodWasteChart';
 import BusinessHourChart from './BusinessHourChart';
 import RestockPredictionChart from './RestockPredictionChart';
 import LowStock from './LowStock';
-import FreezerMonitoring from './FreezerMonitoring';
 import KommunicateChat from '../shared/KommunicateChat';
 import DashboardVoiceAlerts from './DashboardVoiceAlerts';
 
@@ -32,7 +28,64 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
     }
 }));
 
-const Dashboard = () => {
+// Low Stock Section Component
+const LowStockSection: React.FC = () => {
+    const [lowStockCount, setLowStockCount] = useState<number>(0);
+
+    useEffect(() => {
+        const fetchLowStockCount = async () => {
+            try {
+                const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+                const response = await fetch(`${backendUrl}/api/low-stock`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        setLowStockCount(result.data.length);
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching low stock count:', err);
+            }
+        };
+
+        fetchLowStockCount();
+        
+        // Refresh count every 2 minutes to match the LowStock component
+        const interval = setInterval(fetchLowStockCount, 120000);
+        
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <Card sx={{ 
+            height: '400px', 
+            p: 2,
+            boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
+            borderRadius: '10px'
+        }}>
+            <Box sx={{ 
+                height: '100%',
+                backgroundColor: '#ffffff',
+                borderRadius: '8px',
+                boxShadow: 'inset 0px 1px 3px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
+                p: 2,
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+                <Typography variant="h6" gutterBottom>
+                    Low Stock Alerts ({lowStockCount} items)
+                </Typography>
+                <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                    <LowStock />
+                </Box>
+            </Box>
+        </Card>
+    );
+};
+
+const Dashboard: React.FC = () => {
     const navigate = useNavigate();
 
     const handleGridClick = (path: string) => {
@@ -86,9 +139,7 @@ const Dashboard = () => {
                         path: "/performance"
                     }
                 ].map((kpi, idx) => (
-                    <Grid item xs={12} sm={6} md={3} key={kpi.title} 
-                        onClick={() => handleGridClick(kpi.path || '/')} 
-                        style={{ cursor: 'pointer' }}
+                    <Grid item xs={12} sm={6} md={3} key={kpi.title}
                     >
                         <Paper
                             elevation={3}
@@ -146,48 +197,24 @@ const Dashboard = () => {
                     </Grid>
                 ))}
 
-                {/* Low Stock Alerts and Freezer Monitoring */}
+                {/* Low Stock Alerts and Predicted Stock Summary */}
                 <Grid item xs={12} md={6}>
-                    <StyledPaper sx={{ height: '300px', overflow: 'auto' }}>
-                        <Typography variant="h6" gutterBottom>
-                            Low Stock Alerts
-                        </Typography>
-                        <LowStock />
-                    </StyledPaper>
+                    <LowStockSection />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <StyledPaper sx={{ height: '300px'}}>
-                        <FreezerMonitoring />
-                    </StyledPaper>
+                    <RestockPredictionChart />
                 </Grid>
 
                 {/* Charts */}
-                <Grid item xs={12} md={6} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
-                    <StyledPaper>
-                        <StockUsageChart />
-                    </StyledPaper>
-                </Grid>
-                <Grid item xs={12} md={6} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
-                    <StyledPaper>
-                        <RestockPredictionChart />
-                    </StyledPaper>
-                </Grid>
                 <Grid item xs={12} md={6} onClick={() => handleGridClick('/performance')} style={{ cursor: 'pointer' }}>
                     <StyledPaper>
-                        <FoodWasteChart />
+                        <QuickSightFoodWasteChart />
                     </StyledPaper>
                 </Grid>
                 <Grid item xs={12} md={6} onClick={() => handleGridClick('/performance')} style={{ cursor: 'pointer' }}>
                     <StyledPaper>
                         <BusinessHourChart />
-                    </StyledPaper>
-                </Grid>
-
-                {/* Inventory Table */}
-                <Grid item xs={12} onClick={() => handleGridClick('/inventory')} style={{ cursor: 'pointer' }}>
-                    <StyledPaper>
-                        <InventoryTable />
                     </StyledPaper>
                 </Grid>
             </Grid>
