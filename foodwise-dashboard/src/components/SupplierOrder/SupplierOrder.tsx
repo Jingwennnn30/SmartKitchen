@@ -9,7 +9,6 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    TextField,
     Select,
     MenuItem,
     FormControl,
@@ -21,16 +20,12 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Stepper,
-    Step,
-    StepLabel,
     IconButton,
     Tooltip,
     Card,
     CardContent,
     Fab,
     LinearProgress,
-    Divider,
     Avatar,
     Rating
 } from '@mui/material';
@@ -45,8 +40,10 @@ import GrainIcon from '@mui/icons-material/Grain';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import { supplierOrderService } from '../../services/supplierOrderService';
 
 // Types
 interface Supplier {
@@ -79,10 +76,13 @@ interface SupplierOrderType {
     supplier: Supplier;
     items: OrderItem[];
     totalAmount: number;
-    status: 'pending' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
+    status: 'pending' | 'approved' | 'rejected' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
     orderDate: string;
     expectedDelivery: string;
     orderedBy: string;
+    orderMethod: 'voice-assistant' | 'manual';
+    approvedBy?: string;
+    approvalDate?: string;
     notes?: string;
 }
 
@@ -106,17 +106,30 @@ const CategoryCard = styled(Card)(({ theme }) => ({
 
 const StatusChip = styled(Chip)<{ status: string }>(({ status, theme }) => {
     const colors = {
-        pending: { bg: '#fff3e0', color: '#ef6c00' },
-        confirmed: { bg: '#e3f2fd', color: '#1976d2' },
-        'in-transit': { bg: '#f3e5f5', color: '#7b1fa2' },
-        delivered: { bg: '#e8f5e9', color: '#2e7d32' },
-        cancelled: { bg: '#ffebee', color: '#d32f2f' }
+        'pending': { bg: '#fff3e0', color: '#ef6c00', opacity: 0.7 },
+        'approved': { bg: '#e8f5e9', color: '#2e7d32', opacity: 1 },
+        'rejected': { bg: '#ffebee', color: '#d32f2f', opacity: 1 },
+        'confirmed': { bg: '#e3f2fd', color: '#1976d2', opacity: 1 },
+        'in-transit': { bg: '#f3e5f5', color: '#7b1fa2', opacity: 1 },
+        'delivered': { bg: '#e8f5e9', color: '#2e7d32', opacity: 1 },
+        'cancelled': { bg: '#ffebee', color: '#d32f2f', opacity: 1 }
     };
     
+    const colorConfig = colors[status as keyof typeof colors] || { bg: '#f5f5f5', color: '#757575', opacity: 1 };
+    
     return {
-        backgroundColor: colors[status as keyof typeof colors]?.bg || '#f5f5f5',
-        color: colors[status as keyof typeof colors]?.color || '#757575',
-        fontWeight: 'bold'
+        backgroundColor: colorConfig.bg,
+        color: colorConfig.color,
+        fontWeight: 'bold',
+        opacity: colorConfig.opacity,
+        ...(status === 'pending' && {
+            animation: 'pulse 2s infinite',
+            '@keyframes pulse': {
+                '0%': { opacity: 0.7 },
+                '50%': { opacity: 1 },
+                '100%': { opacity: 0.7 }
+            }
+        })
     };
 });
 
@@ -208,6 +221,9 @@ const mockOrders: SupplierOrderType[] = [
         orderDate: '2024-10-02',
         expectedDelivery: '2024-10-04',
         orderedBy: 'Chef Manager',
+        orderMethod: 'manual',
+        approvedBy: 'Restaurant Manager',
+        approvalDate: '2024-10-02',
         notes: 'Urgent order for weekend special menu'
     },
     {
@@ -224,7 +240,44 @@ const mockOrders: SupplierOrderType[] = [
         orderDate: '2024-10-01',
         expectedDelivery: '2024-10-02',
         orderedBy: 'Kitchen Staff',
+        orderMethod: 'manual',
+        approvedBy: 'Restaurant Manager',
+        approvalDate: '2024-10-01',
         notes: 'Regular weekly order'
+    },
+    {
+        id: '3',
+        orderNumber: 'VA-2024-003',
+        supplier: mockSuppliers[2],
+        items: [
+            { id: '6', name: 'Fresh Milk', quantity: 12, unit: 'liters', pricePerUnit: 5, totalPrice: 60 },
+            { id: '7', name: 'Cheese', quantity: 3, unit: 'kg', pricePerUnit: 35, totalPrice: 105 }
+        ],
+        totalAmount: 165,
+        status: 'pending',
+        orderDate: '2024-10-03',
+        expectedDelivery: '2024-10-04',
+        orderedBy: 'Voice Assistant',
+        orderMethod: 'voice-assistant',
+        notes: 'Voice order: "We need milk and cheese for tomorrow\'s breakfast menu"'
+    },
+    {
+        id: '4',
+        orderNumber: 'VA-2024-004',
+        supplier: mockSuppliers[3],
+        items: [
+            { id: '8', name: 'Rice', quantity: 25, unit: 'kg', pricePerUnit: 4, totalPrice: 100 },
+            { id: '9', name: 'Flour', quantity: 10, unit: 'kg', pricePerUnit: 3, totalPrice: 30 }
+        ],
+        totalAmount: 130,
+        status: 'approved',
+        orderDate: '2024-10-03',
+        expectedDelivery: '2024-10-05',
+        orderedBy: 'Voice Assistant',
+        orderMethod: 'voice-assistant',
+        approvedBy: 'Chef Manager',
+        approvalDate: '2024-10-03',
+        notes: 'Voice order: "Low stock alert - need rice and flour urgently"'
     }
 ];
 
@@ -236,25 +289,150 @@ const categories = [
     { name: 'Beverages', icon: <LocalShippingIcon />, color: '#7b1fa2' }
 ];
 
-const orderSteps = ['Order Placed', 'Confirmed', 'In Transit', 'Delivered'];
-
 const SupplierOrder: React.FC = () => {
     const [orders, setOrders] = useState<SupplierOrderType[]>(mockOrders);
-    const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+    const [suppliers] = useState<Supplier[]>(mockSuppliers);
     const [openOrderDialog, setOpenOrderDialog] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [currentUser] = useState('Chef Manager'); // In real app, get from auth context
     const [viewMode, setViewMode] = useState<'overview' | 'create' | 'history'>('overview');
+    const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
-    const getStatusStep = (status: string) => {
-        switch (status) {
-            case 'pending': return 0;
-            case 'confirmed': return 1;
-            case 'in-transit': return 2;
-            case 'delivered': return 3;
-            default: return 0;
+    // Load AWS DynamoDB orders on component mount and set up auto-refresh
+    useEffect(() => {
+        const loadOrderStockData = async () => {
+            setIsLoadingOrders(true);
+            try {
+                console.log("🔄 Loading order stock data from DynamoDB...");
+                const orderStockData = await supplierOrderService.fetchOrderStockData();
+                
+                if (orderStockData && orderStockData.length > 0) {
+                    console.log("✅ Successfully loaded order stock data:", orderStockData);
+                    
+                    // Combine AWS data with mock data
+                    const combinedOrders = [...orderStockData, ...mockOrders];
+                    setOrders(combinedOrders);
+                } else {
+                    console.log("⚠️ No order stock data found, using mock data only");
+                    setOrders(mockOrders);
+                }
+            } catch (error) {
+                console.error("❌ Error loading order stock data:", error);
+                setOrders(mockOrders); // Fallback to mock data
+            } finally {
+                setIsLoadingOrders(false);
+            }
+        };
+
+        // Initial load
+        loadOrderStockData();
+
+        // Set up auto-refresh every 30 seconds for new AWS orders
+        const refreshInterval = setInterval(() => {
+            console.log("🔄 Auto-refreshing AWS orders...");
+            loadOrderStockData();
+        }, 30000); // 30 seconds
+
+        // Cleanup interval on component unmount
+        return () => {
+            clearInterval(refreshInterval);
+        };
+    }, []); // Empty dependency array - runs once on mount
+
+    const handleApproveOrder = async (orderId: string) => {
+        try {
+            console.log(`🔄 Approving order with ID: ${orderId}...`);
+            console.log(`🔍 Order details:`, orders.find(o => o.id === orderId));
+            
+            // Call the API to update status in DynamoDB
+            const success = await supplierOrderService.updateOrderStatus(orderId, 'APPROVED', currentUser);
+            
+            if (success) {
+                console.log(`✅ Order ${orderId} approved successfully`);
+                
+                // Update local state immediately for better UX
+                setOrders(prevOrders => 
+                    prevOrders.map(order => 
+                        order.id === orderId 
+                            ? { 
+                                ...order, 
+                                status: 'approved' as const,
+                                approvedBy: currentUser,
+                                approvalDate: new Date().toISOString().split('T')[0]
+                            }
+                            : order
+                    )
+                );
+                
+                // Force refresh from database to ensure sync
+                setTimeout(async () => {
+                    try {
+                        const orderStockData = await supplierOrderService.fetchOrderStockData();
+                        if (orderStockData && orderStockData.length > 0) {
+                            const combinedOrders = [...orderStockData, ...mockOrders];
+                            setOrders(combinedOrders);
+                        }
+                    } catch (error) {
+                        console.error("Error refreshing after approval:", error);
+                    }
+                }, 1000); // Wait 1 second for database to update
+                
+            } else {
+                console.error(`❌ Failed to approve order ${orderId}`);
+                alert('Failed to approve order. Please try again.');
+            }
+        } catch (error) {
+            console.error(`❌ Error approving order ${orderId}:`, error);
+            alert('Error approving order. Please try again.');
+        }
+    };
+
+    const handleRejectOrder = async (orderId: string) => {
+        try {
+            console.log(`🔄 Rejecting order ${orderId}...`);
+            
+            // Call the API to update status in DynamoDB
+            const success = await supplierOrderService.updateOrderStatus(orderId, 'REJECTED', currentUser);
+            
+            if (success) {
+                console.log(`✅ Order ${orderId} rejected successfully`);
+                
+                // Update local state immediately for better UX
+                setOrders(prevOrders => 
+                    prevOrders.map(order => 
+                        order.id === orderId 
+                            ? { 
+                                ...order, 
+                                status: 'rejected' as const,
+                                approvedBy: currentUser,
+                                approvalDate: new Date().toISOString().split('T')[0]
+                            }
+                            : order
+                    )
+                );
+                
+                // Force refresh from database to ensure sync
+                setTimeout(async () => {
+                    try {
+                        const orderStockData = await supplierOrderService.fetchOrderStockData();
+                        if (orderStockData && orderStockData.length > 0) {
+                            const combinedOrders = [...orderStockData, ...mockOrders];
+                            setOrders(combinedOrders);
+                        }
+                    } catch (error) {
+                        console.error("Error refreshing after rejection:", error);
+                    }
+                }, 1000); // Wait 1 second for database to update
+                
+            } else {
+                console.error(`❌ Failed to reject order ${orderId}`);
+                alert('Failed to reject order. Please try again.');
+            }
+        } catch (error) {
+            console.error(`❌ Error rejecting order ${orderId}:`, error);
+            alert('Error rejecting order. Please try again.');
         }
     };
 
@@ -262,12 +440,6 @@ const SupplierOrder: React.FC = () => {
         const cat = categories.find(c => c.name === category);
         return cat ? cat.icon : <RestaurantIcon />;
     };
-
-    const getCategoryColor = (category: string) => {
-        const cat = categories.find(c => c.name === category);
-        return cat ? cat.color : '#757575';
-    };
-
     const handleCategorySelect = (category: string) => {
         setSelectedCategory(category);
         setViewMode('create');
@@ -295,10 +467,10 @@ const SupplierOrder: React.FC = () => {
 
     const getOrderStatusCounts = () => {
         const counts = {
-            pending: orders.filter(o => o.status === 'pending').length,
-            confirmed: orders.filter(o => o.status === 'confirmed').length,
+            'pending': orders.filter(o => o.status === 'pending').length,
+            'approved': orders.filter(o => o.status === 'approved').length,
             'in-transit': orders.filter(o => o.status === 'in-transit').length,
-            delivered: orders.filter(o => o.status === 'delivered').length,
+            'delivered': orders.filter(o => o.status === 'delivered').length,
         };
         return counts;
     };
@@ -335,7 +507,7 @@ const SupplierOrder: React.FC = () => {
                         <Grid item xs={12} sm={3}>
                             <StyledPaper>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <PendingIcon sx={{ color: '#ef6c00', fontSize: 40 }} />
+                                    <HourglassEmptyIcon sx={{ color: '#ef6c00', fontSize: 40 }} />
                                     <Box>
                                         <Typography variant="h4" sx={{ color: '#ef6c00' }}>
                                             {statusCounts.pending}
@@ -350,13 +522,13 @@ const SupplierOrder: React.FC = () => {
                         <Grid item xs={12} sm={3}>
                             <StyledPaper>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <CheckCircleIcon sx={{ color: '#1976d2', fontSize: 40 }} />
+                                    <ThumbUpIcon sx={{ color: '#2e7d32', fontSize: 40 }} />
                                     <Box>
-                                        <Typography variant="h4" sx={{ color: '#1976d2' }}>
-                                            {statusCounts.confirmed}
+                                        <Typography variant="h4" sx={{ color: '#2e7d32' }}>
+                                            {statusCounts.approved}
                                         </Typography>
                                         <Typography variant="subtitle2" color="textSecondary">
-                                            Confirmed
+                                            Approved
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -440,25 +612,43 @@ const SupplierOrder: React.FC = () => {
                                         <TableCell>Order #</TableCell>
                                         <TableCell>Supplier</TableCell>
                                         <TableCell>Category</TableCell>
-                                        <TableCell>Amount</TableCell>
+                                        <TableCell>Item Details</TableCell>
                                         <TableCell>Status</TableCell>
                                         <TableCell>Ordered By</TableCell>
                                         <TableCell>Expected Delivery</TableCell>
-                                        <TableCell>Progress</TableCell>
+                                        <TableCell>Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {orders.slice(0, 5).map((order) => (
+                                    {/* Sort orders: pending first, then by order date */}
+                                    {orders
+                                        .sort((a, b) => {
+                                            // First, sort by status (pending first)
+                                            if (a.status === 'pending' && b.status !== 'pending') return -1;
+                                            if (b.status === 'pending' && a.status !== 'pending') return 1;
+                                            // Then sort by date (newest first)
+                                            return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime();
+                                        })
+                                        .slice(0, 8)
+                                        .map((order) => (
                                         <TableRow key={order.id}>
-                                            <TableCell>{order.orderNumber}</TableCell>
+                                            <TableCell>
+                                                {order.orderNumber}
+                                            </TableCell>
                                             <TableCell>{order.supplier.name}</TableCell>
                                             <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    {getCategoryIcon(order.supplier.category)}
-                                                    {order.supplier.category}
+                                                {order.supplier.category}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box>
+                                                    <Typography variant="body2" fontWeight="medium">
+                                                        {order.items[0]?.name || 'N/A'}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="textSecondary">
+                                                        Qty: {order.items[0]?.quantity || 0} {order.items[0]?.unit || 'units'}
+                                                    </Typography>
                                                 </Box>
                                             </TableCell>
-                                            <TableCell>RM {order.totalAmount.toFixed(2)}</TableCell>
                                             <TableCell>
                                                 <StatusChip
                                                     label={order.status.replace('-', ' ').toUpperCase()}
@@ -466,16 +656,54 @@ const SupplierOrder: React.FC = () => {
                                                     size="small"
                                                 />
                                             </TableCell>
-                                            <TableCell>{order.orderedBy}</TableCell>
-                                            <TableCell>{order.expectedDelivery}</TableCell>
                                             <TableCell>
-                                                <Box sx={{ width: 100 }}>
-                                                    <LinearProgress
-                                                        variant="determinate"
-                                                        value={(getStatusStep(order.status) + 1) * 25}
-                                                        sx={{ height: 8, borderRadius: 4 }}
-                                                    />
+                                                <Box>
+                                                    <Typography variant="body2">{order.orderedBy}</Typography>
+                                                    {order.approvedBy && (
+                                                        <Typography variant="caption" color="textSecondary">
+                                                            Approved by: {order.approvedBy}
+                                                        </Typography>
+                                                    )}
                                                 </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2">
+                                                    {order.status === 'pending' ? (
+                                                        <span style={{ opacity: 0.5 }}>Pending approval</span>
+                                                    ) : (
+                                                        order.expectedDelivery
+                                                    )}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                {order.status === 'pending' ? (
+                                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                                        <Button 
+                                                            size="small" 
+                                                            variant="contained"
+                                                            color="success"
+                                                            onClick={() => handleApproveOrder(order.id)}
+                                                            sx={{ minWidth: '80px' }}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                        <Button 
+                                                            size="small" 
+                                                            variant="outlined"
+                                                            color="error"
+                                                            onClick={() => handleRejectOrder(order.id)}
+                                                            sx={{ minWidth: '70px' }}
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                    </Box>
+                                                ) : (
+                                                    <Tooltip title="View Details">
+                                                        <IconButton size="small">
+                                                            <EditIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -498,7 +726,7 @@ const SupplierOrder: React.FC = () => {
                                     <TableCell>Order #</TableCell>
                                     <TableCell>Supplier</TableCell>
                                     <TableCell>Items</TableCell>
-                                    <TableCell>Amount</TableCell>
+                                    <TableCell>Item Details</TableCell>
                                     <TableCell>Status</TableCell>
                                     <TableCell>Order Date</TableCell>
                                     <TableCell>Ordered By</TableCell>
@@ -506,7 +734,27 @@ const SupplierOrder: React.FC = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {orders.map((order) => (
+                                {isLoadingOrders ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center">
+                                            <Box sx={{ py: 3 }}>
+                                                <LinearProgress sx={{ mb: 2 }} />
+                                                <Typography variant="body2" color="textSecondary">
+                                                    Loading orders from AWS DynamoDB...
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : orders.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center">
+                                            <Typography variant="body2" color="textSecondary" sx={{ py: 3 }}>
+                                                No orders found
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    orders.map((order) => (
                                     <TableRow key={order.id}>
                                         <TableCell>{order.orderNumber}</TableCell>
                                         <TableCell>
@@ -527,7 +775,16 @@ const SupplierOrder: React.FC = () => {
                                                 {order.items.map(item => item.name).join(', ')}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>RM {order.totalAmount.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Box>
+                                                <Typography variant="body2" fontWeight="medium">
+                                                    {order.items[0]?.name || 'N/A'}
+                                                </Typography>
+                                                <Typography variant="caption" color="textSecondary">
+                                                    Qty: {order.items[0]?.quantity || 0} {order.items[0]?.unit || 'units'}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
                                         <TableCell>
                                             <StatusChip
                                                 label={order.status.replace('-', ' ').toUpperCase()}
@@ -545,7 +802,8 @@ const SupplierOrder: React.FC = () => {
                                             </Tooltip>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ))
+                                )}
                             </TableBody>
                         </Table>
                     </TableContainer>
