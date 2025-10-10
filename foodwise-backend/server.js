@@ -44,7 +44,7 @@ const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
         ? process.env.FRONTEND_URL || 'https://your-production-domain.com'
         : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 };
@@ -347,6 +347,133 @@ app.get('/get-embed-url', async (req, res) => {
             code: error.code,
             timestamp: new Date().toISOString(),
             // Only include detailed error in development
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Order Stock endpoint - Fetch supplier orders from DynamoDB
+app.get('/api/order-stock', async (req, res) => {
+    try {
+        console.log('Received request for order stock data');
+        
+        const params = {
+            TableName: 'order-stock',
+            Limit: 50
+        };
+        
+        const result = await dynamodb.scan(params).promise();
+        
+        // Transform your DynamoDB data to match supplier order format
+        const orderData = result.Items.map(item => {
+            console.log('Raw DynamoDB item:', item); // Debug log
+            
+            return {
+                id: item.order_id || `order-${Date.now()}-${Math.random()}`,
+                orderNumber: item.order_id ? `AWS-${item.order_id.slice(-6)}` : `AWS-${Date.now()}`, // Shorter order number
+                supplier: {
+                    id: '1',
+                    name: 'Fresh Produce', // Removed "AWS" prefix
+                    category: 'Fresh Produce', // Updated category
+                    contact: {
+                        phone: '+1-555-0101',
+                        email: 'orders@freshproduce.com',
+                        address: '123 Fresh Street'
+                    },
+                    rating: 4.5,
+                    deliveryTime: '24 hours',
+                    minOrder: 50,
+                    paymentTerms: 'Net 15'
+                },
+                items: [{
+                    id: item.item_id || '1',
+                    name: item.item_name || 'Papaya', // Default to Papaya since that's what your table has
+                    quantity: parseInt(item.order_quantity || 0),
+                    unit: item.unit || 'kg',
+                    pricePerUnit: 10, // Mock price
+                    totalPrice: parseInt(item.order_quantity || 0) * 10
+                }],
+                totalAmount: parseInt(item.order_quantity || 0) * 10,
+                status: item.order_status ? 
+                    (item.order_status.toUpperCase() === 'APPROVED' ? 'approved' : 
+                     item.order_status.toUpperCase() === 'PENDING' ? 'pending' : 
+                     item.order_status.toLowerCase()) : 'pending',
+                orderDate: item.order_timestamp ? item.order_timestamp.split('T')[0] : new Date().toISOString().split('T')[0],
+                expectedDelivery: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+                orderedBy: 'Voice Assistant', // Assuming these are voice orders
+                orderMethod: 'voice-assistant',
+                notes: `Voice order for ${item.item_name} - Quantity: ${item.order_quantity} ${item.unit}`
+            };
+        });
+        
+        // Sort by order timestamp (newest first)
+        const sortedData = orderData.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+        
+        console.log(`Successfully retrieved ${sortedData.length} order stock items`);
+        
+        res.status(200).json(sortedData);
+        
+    } catch (error) {
+        console.error('Error fetching order stock data:', error);
+        
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch order stock data',
+            code: error.code || 'UnknownError',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Update Order Status endpoint - Update order status in DynamoDB
+app.put('/api/order-stock/:orderId/status', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { status, approvedBy } = req.body;
+        
+        console.log(`🔄 Updating order ${orderId} status to ${status} by ${approvedBy}`);
+        
+        // Validate status
+        const validStatuses = ['PENDING', 'APPROVED', 'REJECTED'];
+        if (!validStatuses.includes(status.toUpperCase())) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid status. Must be PENDING, APPROVED, or REJECTED'
+            });
+        }
+        
+        const params = {
+            TableName: 'order-stock',
+            Key: {
+                'order_id': orderId
+            },
+            UpdateExpression: 'SET order_status = :status, approved_by = :approvedBy, approval_date = :approvalDate',
+            ExpressionAttributeValues: {
+                ':status': status.toUpperCase(),
+                ':approvedBy': approvedBy || 'System',
+                ':approvalDate': new Date().toISOString()
+            },
+            ReturnValues: 'UPDATED_NEW'
+        };
+        
+        const result = await dynamodb.update(params).promise();
+        
+        console.log(`✅ Successfully updated order ${orderId} status to ${status}`);
+        
+        res.status(200).json({
+            success: true,
+            message: `Order ${orderId} status updated to ${status}`,
+            updatedAttributes: result.Attributes
+        });
+        
+    } catch (error) {
+        console.error('❌ Error updating order status:', error);
+        
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update order status',
+            code: error.code || 'UnknownError',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
