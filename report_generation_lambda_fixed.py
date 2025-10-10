@@ -1492,12 +1492,12 @@ def generate_weekly_ai_insights(theme, total_orders, total_revenue, avg_order_va
     analysis = f"""
     <div class="ai-analysis-grid" style="background: {theme['bg_gradient']}; padding: 25px; border-radius: 15px; border-left: 5px solid {theme['primary']};">
         <div class="analysis-section">
-            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">� Weekly Trends</div>
+            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">  Weekly Trends</div>
             <div class="section-content">{weekly_trend} with {total_orders} orders generating RM {total_revenue:,.2f} across 7 days. AI identified 3 customer behavior patterns, increasing repeat visits by 31%.</div>
         </div>
         
         <div class="analysis-section">
-            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">� Pattern Analysis</div>
+            <div class="section-header" style="color: {theme['primary']}; font-weight: bold;">  Pattern Analysis</div>
             <div class="section-content">Weekly peak at {peak_hour}:00 shows {pattern_analysis} with RM {avg_order_value:.2f} average orders. AI detected mid-week revenue opportunity (+25% potential) through targeted promotions.</div>
         </div>
         
