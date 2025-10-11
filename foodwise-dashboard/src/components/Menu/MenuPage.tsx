@@ -163,20 +163,50 @@ const MenuPage: React.FC = () => {
         return matchesSearch && matchesCategory;
     });
 
+    // Sort categories to display Main Courses first
+    const sortedCategories = [...menuCategories].sort((a, b) => {
+        if (a === 'Main Courses') return -1;
+        if (b === 'Main Courses') return 1;
+        return a.localeCompare(b);
+    });
+
     // Get categories for display in the filter - including 'All'
-    const displayCategories = ['All', ...menuCategories];
+    const displayCategories = ['All', ...sortedCategories];
 
     return (
         <div style={{ padding: '20px' }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h4">Menu</Typography>
+            <Box 
+                display="flex" 
+                justifyContent="space-between" 
+                alignItems="center" 
+                mb={4}
+                sx={{
+                    borderBottom: '3px solid #1976d2',
+                    pb: 2,
+                    background: 'linear-gradient(to right, #ffffff, #f5f5f5)',
+                    px: 2,
+                    borderRadius: '8px 8px 0 0',
+                }}
+            >
+                <Typography 
+                    variant="h4" 
+                    sx={{
+                        fontWeight: 600,
+                        color: '#1976d2',
+                        textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                    }}
+                >
+                    Our Menu
+                </Typography>
                 <IconButton 
                     color="primary" 
                     onClick={() => setIsCartOpen(true)}
                     sx={{ 
-                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                        backgroundColor: '#1976d2',
+                        color: 'white',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         '&:hover': {
-                            backgroundColor: 'rgba(25, 118, 210, 0.15)',
+                            backgroundColor: '#1565c0',
                         }
                     }}
                 >
@@ -199,7 +229,18 @@ const MenuPage: React.FC = () => {
             </Box>
 
             {/* Search and Filter Bar */}
-            <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+            <Box 
+                sx={{ 
+                    mb: 4, 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' }, 
+                    gap: 2,
+                    backgroundColor: 'white',
+                    p: 3,
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                }}
+            >
                 <TextField
                     fullWidth
                     variant="outlined"
@@ -207,10 +248,18 @@ const MenuPage: React.FC = () => {
                     label="Search menu items"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                            '&:hover fieldset': {
+                                borderColor: '#1976d2',
+                            },
+                        },
+                    }}
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1976d2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
@@ -227,6 +276,14 @@ const MenuPage: React.FC = () => {
                         label="Category"
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: '8px',
+                                '&:hover fieldset': {
+                                    borderColor: '#1976d2',
+                                },
+                            },
+                        }}
                     >
                         {displayCategories.map((category) => (
                             <option key={category} value={category}>
@@ -284,25 +341,67 @@ const MenuPage: React.FC = () => {
                                             display: 'flex',
                                             flexDirection: 'column',
                                             height: '100%',
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                            transition: 'all 0.3s ease',
+                                            borderRadius: '16px',
+                                            overflow: 'hidden',
+                                            border: '1px solid #e0e0e0',
+                                            backgroundColor: '#ffffff',
                                             '&:hover': {
                                                 transform: 'translateY(-4px)',
-                                                boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
+                                                boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
+                                                borderColor: '#1976d2'
                                             }
                                         }}>
-                                            <Box sx={{ p: 2, flexGrow: 1 }}>
-                                                <Typography variant="h6" gutterBottom>{item.dishName}</Typography>
-                                                <Typography variant="body1" color="primary" fontWeight="bold" sx={{ mt: 1 }}>
+                                            <Box 
+                                                sx={{ 
+                                                    p: 3, 
+                                                    flexGrow: 1,
+                                                    borderBottom: '1px solid #f0f0f0'
+                                                }}
+                                            >
+                                                <Typography 
+                                                    variant="h6" 
+                                                    gutterBottom 
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        color: '#2c3e50',
+                                                        fontSize: '1.1rem',
+                                                        lineHeight: 1.3
+                                                    }}
+                                                >
+                                                    {item.dishName}
+                                                </Typography>
+                                                <Typography 
+                                                    variant="h5" 
+                                                    sx={{ 
+                                                        mt: 2,
+                                                        color: '#1976d2',
+                                                        fontWeight: 700,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1
+                                                    }}
+                                                >
                                                     RM {item.price}
                                                 </Typography>
                                             </Box>
-                                            <Box sx={{ p: 2, pt: 0 }}>
+                                            <Box sx={{ p: 2, bgcolor: '#f8f9fa' }}>
                                                 <Button
                                                     startIcon={<AddShoppingCartIcon />}
                                                     variant="contained"
                                                     color="primary"
                                                     onClick={() => addToCart(item)}
                                                     fullWidth
+                                                    sx={{
+                                                        borderRadius: '8px',
+                                                        textTransform: 'none',
+                                                        py: 1,
+                                                        fontWeight: 600,
+                                                        boxShadow: 'none',
+                                                        '&:hover': {
+                                                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                                                        }
+                                                    }}
                                                 >
                                                     Add to Cart
                                                 </Button>
@@ -315,7 +414,7 @@ const MenuPage: React.FC = () => {
                     ) : (
                         // Group by categories when "All" is selected
                         <Box>
-                            {menuCategories.map(category => {
+                            {sortedCategories.map(category => {
                                 // Filter items by category and search term
                                 const itemsInCategory = filteredMenuItems.filter(item => item.category === category);
                                 
@@ -323,17 +422,29 @@ const MenuPage: React.FC = () => {
                                 
                                 return (
                                     <Box key={category} mb={4}>
-                                        <Typography 
-                                            variant="h5" 
-                                            sx={{ 
-                                                mb: 2, 
-                                                pb: 1, 
-                                                borderBottom: '2px solid #1976d2',
-                                                fontWeight: 'bold'
+                                        <Box
+                                            sx={{
+                                                mb: 3,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 2,
+                                                background: 'linear-gradient(to right, #1976d2, #1565c0)',
+                                                p: 2,
+                                                borderRadius: '12px',
+                                                boxShadow: '0 2px 8px rgba(25, 118, 210, 0.2)',
                                             }}
                                         >
-                                            {category}
-                                        </Typography>
+                                            <Typography 
+                                                variant="h5" 
+                                                sx={{ 
+                                                    fontWeight: 'bold',
+                                                    color: 'white',
+                                                    textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                                                }}
+                                            >
+                                                {category}
+                                            </Typography>
+                                        </Box>
                                         <Grid container spacing={3}>
                                             {itemsInCategory.map((item, index) => (
                                                 <Grid item xs={12} sm={6} md={4} key={`${category}-${index}`}>
