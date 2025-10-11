@@ -1,0 +1,31 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "QuickSightEmbedAccess",
+            "Effect": "Allow",
+            "Action": [
+                "quicksight:GetDashboardEmbedUrl",
+                "quicksight:DescribeDashboard",
+                "quicksight:ListDashboards",
+                "quicksight:GetSessionEmbedUrl"
+            ],
+            "Resource": [
+                "arn:aws:quicksight:us-east-1:761386521687:dashboard/*",
+                "arn:aws:quicksight:us-east-1:761386521687:user/*"
+            ]
+        },
+        {
+            "Sid": "QuickSightUserAccess",
+            "Effect": "Allow",
+            "Action": [
+                "quicksight:DescribeUser",
+                "quicksight:ListUsers",
+                "quicksight:RegisterUser"
+            ],
+            "Resource": [
+                "arn:aws:quicksight:us-east-1:761386521687:user/*"
+            ]
+        }
+    ]
+}
