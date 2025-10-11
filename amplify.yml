@@ -1,11 +1,4 @@
 version: 1
-backend:
-    phases:
-        build:
-            commands:
-                - 'echo "Deploying serverless backend functions..."'
-                - 'cd lambda-functions && zip -r quicksight-function.zip quicksight_embed_lambda.py'
-                - 'aws lambda update-function-code --function-name quicksight-embed --zip-file fileb://quicksight-function.zip'
 frontend:
     phases:
         preBuild:
