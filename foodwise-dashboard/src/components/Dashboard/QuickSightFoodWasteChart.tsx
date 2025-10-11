@@ -100,7 +100,7 @@ const QuickSightFoodWasteChart: React.FC = () => {
                 flexDirection: 'column'
             }}>
                 <Typography variant="h6" gutterBottom>
-                    📊 Food Waste Analysis
+                     Food Waste Analysis
                 </Typography>
                 <Box sx={{ 
                     flex: 1, 
@@ -135,7 +135,7 @@ const QuickSightFoodWasteChart: React.FC = () => {
                 flexDirection: 'column'
             }}>
                 <Typography variant="h6" gutterBottom>
-                    📊 Food Waste Analysis
+                     Food Waste Analysis
                 </Typography>
                 <Box sx={{ 
                     flex: 1, 
@@ -187,7 +187,7 @@ const QuickSightFoodWasteChart: React.FC = () => {
                 mb: 1
             }}>
                 <Typography variant="h6">
-                    📊 Food Waste Analysis
+                     Food Waste Analysis
                 </Typography>
                 <Button 
                     size="small" 

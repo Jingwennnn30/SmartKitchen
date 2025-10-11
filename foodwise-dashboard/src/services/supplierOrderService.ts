@@ -91,10 +91,14 @@ class SupplierOrderService {
             const transformedData: SupplierOrderType[] = rawData.map((order: any) => {
                 console.log("🔧 Transforming order:", order);
                 
+                // Generate order number using VA + first 8 characters of order_id
+                const orderNumber = `VA${order.id.substring(0, 8)}`;
+                console.log(`📋 Generated order number: ${orderNumber} from order_id: ${order.id}`);
+                
                 // The API already returns the correct format, just use it directly
                 return {
                     id: order.id,
-                    orderNumber: order.orderNumber, // Keep the backend format (AWS-xxxxx)
+                    orderNumber: orderNumber, // Use VA + first 8 chars of order_id
                     supplier: order.supplier, // Use backend supplier data
                     items: order.items, // Items are already in correct format from API
                     totalAmount: order.totalAmount,
