@@ -18,6 +18,7 @@ import PreDiningPreparation from './components/PreDining/PreDiningPreparation';
 import OrderManagement from './components/OrderManagement/OrderManagement';
 import PerformanceTrends from './components/Performance/PerformanceTrends';
 import DonationPage from './components/Donation/DonationPage';
+import SupplierOrder from './components/SupplierOrder/SupplierOrder';
 import MenuPage from './components/Menu/MenuPage';
 import Sidebar from './components/Dashboard/Sidebar';
 import Header from './components/shared/Header';
@@ -302,6 +303,15 @@ const router = createBrowserRouter(
           element={
             <ProtectedRoute allowedRoles={['manager']}>
               <PerformanceTrends />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/supplier-orders" 
+          element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <SupplierOrder />
             </ProtectedRoute>
           } 
         />
