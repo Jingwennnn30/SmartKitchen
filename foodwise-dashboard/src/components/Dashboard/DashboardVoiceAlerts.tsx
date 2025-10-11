@@ -6,7 +6,7 @@ import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 const DashboardVoiceAlerts: React.FC = () => {
     const [isEnabled, setIsEnabled] = useState(false);
 
-    const ALERT_URL = "https://1h4r0k3fej.execute-api.us-east-1.amazonaws.com/dev/get-alert-message";
+    const ALERT_URL = "https://v6ngutmexh.execute-api.us-east-1.amazonaws.com/check-stock-voicealert";
 
     const speakText = (text: string) => {
         if (!("speechSynthesis" in window)) {
