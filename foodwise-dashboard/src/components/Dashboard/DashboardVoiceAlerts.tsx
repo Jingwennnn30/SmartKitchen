@@ -6,7 +6,7 @@ import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 const DashboardVoiceAlerts: React.FC = () => {
     const [isEnabled, setIsEnabled] = useState(false);
 
-    const ALERT_URL = "https://1h4r0k3fej.execute-api.us-east-1.amazonaws.com/dev/get-alert-message";
+    const ALERT_URL = "https://5hmozf4lwl.execute-api.us-east-1.amazonaws.com/dev/get-latest-alert";
 
     const speakText = (text: string) => {
         if (!("speechSynthesis" in window)) {
@@ -44,23 +44,37 @@ const DashboardVoiceAlerts: React.FC = () => {
             const j = await res.json();
             console.log("API response:", j);
 
-            if (j && j.alert_message) {
+            if (j && j.message) {
                 const last = localStorage.getItem("lastAlertMessage");
-                if (last !== j.alert_message) {
-                    localStorage.setItem("lastAlertMessage", j.alert_message);
+                if (last !== j.message) {
+                    localStorage.setItem("lastAlertMessage", j.message);
                     
-                    // Create a better spoken message
-                    let spokenMessage = j.alert_message;
-                    if (j.item_name && j.quantity) {
-                        spokenMessage = `${j.item_name} is low. Only ${j.quantity} left. Please restock this item.`;
+                    // Create a better spoken message based on the actual response structure
+                    let spokenMessage = j.message;
+                    
+                    // If there are low stock items, create detailed alerts
+                    if (j.low_stock_items && j.low_stock_items.length > 0) {
+                        const items = j.low_stock_items.map((item: any) => {
+                            if (item.item_name && item.quantity !== undefined) {
+                                return `${item.item_name} is low with only ${item.quantity} left`;
+                            }
+                            return JSON.stringify(item);
+                        }).join('. ');
+                        spokenMessage = `Alert: ${items}. Please restock these items.`;
+                    } else {
+                        // For "No new low-stock items" message, we might not want to speak it every time
+                        if (j.message.includes("No new low-stock items")) {
+                            console.log("No low-stock items, skipping voice alert");
+                            return; // Don't speak when there are no alerts
+                        }
                     }
                     
                     speakText(spokenMessage);
                 } else {
-                    console.log("Same message as last time, not speaking:", j.alert_message);
+                    console.log("Same message as last time, not speaking:", j.message);
                 }
             } else {
-                console.log("No alert_message in response or empty response");
+                console.log("No message in response or empty response");
             }
         } catch (e) {
             console.error("Alert check failed", e);

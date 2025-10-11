@@ -53,25 +53,52 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
             log("[TTS] not supported, showing text:", text);
             return;
         }
+        
+        // Stop all recognition while speaking to prevent feedback
+        if (wakeRecRef.current) {
+            try { wakeRecRef.current.stop(); } catch(e) {}
+        }
+        if (cmdRecRef.current) {
+            try { cmdRecRef.current.stop(); } catch(e) {}
+        }
+        
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "en-US";
+        
+        // Resume listening after speech ends
+        u.onend = () => {
+            log("[TTS] Speech ended, can resume listening");
+        };
+        
         window.speechSynthesis.speak(u);
     };
 
     const shouldContinueConversation = (messages: string[]) => {
-        if (!messages || messages.length === 0) return false;
+        if (!messages || messages.length === 0) return true; // Continue by default
         
         const lastMessage = messages[messages.length - 1].toLowerCase();
         
-        // End conversation if order is placed
-        if (lastMessage.includes("placed an order") || lastMessage.includes("i've placed")) {
+        // Only end conversation on very specific completion phrases
+        const endingPhrases = [
+            "placed an order",
+            "i've placed",
+            "order complete",
+            "thank you for your order",
+            "goodbye",
+            "that's all",
+            "nothing else",
+            "i'm done",
+            "end conversation",
+            "stop listening"
+        ];
+        
+        // End only if we find a clear ending phrase
+        if (endingPhrases.some(phrase => lastMessage.includes(phrase))) {
             return false;
         }
         
-        // Continue if Lex is asking a question or expecting more input
-        const questionIndicators = ['?', 'what', 'which', 'how', 'when', 'where', 'do you want', 'would you like'];
-        
-        return questionIndicators.some(indicator => lastMessage.includes(indicator));
+        // Continue conversation by default - let the 10-second timeout handle the end
+        return true;
     };
 
     const sendToBackend = async (text: string) => {
@@ -107,7 +134,7 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
             // speak the messages
             for (const m of messages) {
                 speakText(m);
-                await sleep(300); // small gap between messages
+                await sleep(1000); // small gap between messages
             }
             
             // Check if conversation should continue
@@ -144,6 +171,13 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) return;
         
+        // Don't start if currently speaking
+        if (window.speechSynthesis.speaking) {
+            console.log("[Cmd] Delaying start - TTS still active");
+            setTimeout(() => startCommandRecognition(), 1000);
+            return;
+        }
+        
         if (cmdRecRef.current) {
             try { cmdRecRef.current.stop(); } catch(e) {}
         }
@@ -159,6 +193,12 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
         log("[Cmd] listening for command...");
 
         cmdRecRef.current.onresult = (ev: any) => {
+            // Don't process if currently speaking
+            if (window.speechSynthesis.speaking) {
+                console.log("[Cmd] Ignoring speech while TTS is active");
+                return;
+            }
+            
             let transcript = "";
             for (let i = ev.resultIndex; i < ev.results.length; ++i) {
                 transcript += ev.results[i][0].transcript;
@@ -206,8 +246,20 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
 
         // Stop after 10 seconds if no command
         commandTimeout = setTimeout(() => {
-            log("[Cmd] timeout: no command after 10s");
+            log("[Cmd] timeout: no command after 10s - ending conversation");
             try { cmdRecRef.current.stop(); } catch(e) {}
+            
+            // Provide ending message and return to wake word detection
+            setStatusInternal("conversation ended (timeout)", "speaking");
+            speakText("I didn't hear anything. If you need help later, just say 'Hey Chef' again!");
+            
+            // Return to wake word detection after the goodbye message
+            setTimeout(() => {
+                isInCommandModeRef.current = false;
+                isRunningRef.current = true;
+                setStatusInternal("idle");
+                if (isRunningRef.current) startWakeRecognition();
+            }, 3000);
         }, 10000);
 
         try {
@@ -270,6 +322,12 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
             // Only process if not already in command mode
             if (isInCommandModeRef.current) return;
             
+            // Don't process if currently speaking
+            if (window.speechSynthesis.speaking) {
+                console.log("[Wake] Ignoring speech while TTS is active");
+                return;
+            }
+            
             // assemble transcript from event.results
             let transcript = "";
             for (let i = ev.resultIndex; i < ev.results.length; ++i) {
@@ -293,9 +351,20 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
                 isRunningRef.current = false; // prevent auto-restart
                 isInCommandModeRef.current = true; // enter command mode
                 try { wakeRecRef.current.stop(); } catch(e) {}
-                // start command capture for 10 seconds
-                startCommandRecognition();
-            } else {
+                const wakeResponse = "Hello! I'm your kitchen assistant. How can I help you today?";
+                setStatusInternal("responding to wake word...", "speaking");
+                speakText(wakeResponse);
+                // start command capture after speech finishes
+                setTimeout(() => {
+                    // Only start if speech has finished
+                    if (!window.speechSynthesis.speaking) {
+                        startCommandRecognition();
+                    } else {
+                        // Wait a bit more if still speaking
+                        setTimeout(() => startCommandRecognition(), 1000);
+                    }
+                }, 3000); // Increased timeout to ensure speech finishes
+                        } else {
                 console.log("[Wake] No wake word detected in:", txt);
             }
         };
