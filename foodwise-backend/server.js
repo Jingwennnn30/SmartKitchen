@@ -368,13 +368,123 @@ app.get('/api/order-stock', async (req, res) => {
         const orderData = result.Items.map(item => {
             console.log('Raw DynamoDB item:', item); // Debug log
             
-            return {
-                id: item.order_id || `order-${Date.now()}-${Math.random()}`,
-                orderNumber: item.order_id ? `AWS-${item.order_id.slice(-6)}` : `AWS-${Date.now()}`, // Shorter order number
-                supplier: {
+            // Smart category and supplier mapping based on item name
+            const getSupplierAndCategory = (itemName) => {
+                const name = (itemName || '').toLowerCase();
+                
+                // Meat category items
+                if (['beef', 'chicken', 'pork', 'lamb', 'fish', 'salmon', 'tuna', 'shrimp'].some(meat => name.includes(meat))) {
+                    return {
+                        id: '2',
+                        name: 'Premium Meats Co',
+                        category: 'Meat',
+                        contact: {
+                            phone: '+1-555-0202',
+                            email: 'orders@premiummeats.com',
+                            address: '456 Butcher Lane'
+                        },
+                        rating: 4.7,
+                        deliveryTime: '12 hours',
+                        minOrder: 75,
+                        paymentTerms: 'Net 10'
+                    };
+                }
+                
+                // Fruits category items (NEW CATEGORY)
+                if (['papaya', 'apple', 'banana', 'orange', 'mango', 'pineapple', 'grapes', 'strawberry', 'blueberry', 'kiwi'].some(fruit => name.includes(fruit))) {
+                    return {
+                        id: '6',
+                        name: 'Tropical Fruits Supply',
+                        category: 'Fruits',
+                        contact: {
+                            phone: '+1-555-0606',
+                            email: 'orders@tropicalfruits.com',
+                            address: '987 Orchard Road'
+                        },
+                        rating: 4.8,
+                        deliveryTime: '24 hours',
+                        minOrder: 30,
+                        paymentTerms: 'Net 10'
+                    };
+                }
+                
+                // Vegetables category items (excluding fruits now)
+                if (['potato', 'tomato', 'onion', 'carrot', 'lettuce', 'spinach', 'broccoli', 'cucumber', 'bell pepper', 'mushroom'].some(veg => name.includes(veg))) {
+                    return {
+                        id: '1',
+                        name: 'Fresh Produce',
+                        category: 'Vegetables',
+                        contact: {
+                            phone: '+1-555-0101',
+                            email: 'orders@freshproduce.com',
+                            address: '123 Fresh Street'
+                        },
+                        rating: 4.5,
+                        deliveryTime: '24 hours',
+                        minOrder: 50,
+                        paymentTerms: 'Net 15'
+                    };
+                }
+                
+                // Dairy category items
+                if (['milk', 'cheese', 'butter', 'cream', 'yogurt', 'eggs'].some(dairy => name.includes(dairy))) {
+                    return {
+                        id: '3',
+                        name: 'Dairy Fresh',
+                        category: 'Dairy',
+                        contact: {
+                            phone: '+1-555-0303',
+                            email: 'orders@dairyfresh.com',
+                            address: '789 Milk Avenue'
+                        },
+                        rating: 4.6,
+                        deliveryTime: '18 hours',
+                        minOrder: 40,
+                        paymentTerms: 'Net 7'
+                    };
+                }
+                
+                // Dry Goods category items
+                if (['spaghetti', 'pasta', 'rice', 'flour', 'yeast', 'bread', 'noodles', 'quinoa', 'oats'].some(dry => name.includes(dry))) {
+                    return {
+                        id: '4',
+                        name: 'Dry Goods Depot',
+                        category: 'Dry Goods',
+                        contact: {
+                            phone: '+1-555-0404',
+                            email: 'orders@drygoods.com',
+                            address: '321 Storage Way'
+                        },
+                        rating: 4.4,
+                        deliveryTime: '36 hours',
+                        minOrder: 60,
+                        paymentTerms: 'Net 30'
+                    };
+                }
+                
+                // Beverages category items
+                if (['whiskey', 'wine', 'beer', 'juice', 'soda', 'water', 'coffee', 'tea', 'vodka', 'rum'].some(bev => name.includes(bev))) {
+                    return {
+                        id: '5',
+                        name: 'Beverage World',
+                        category: 'Beverages',
+                        contact: {
+                            phone: '+1-555-0505',
+                            email: 'orders@beverageworld.com',
+                            address: '654 Drink Drive'
+                        },
+                        rating: 4.3,
+                        deliveryTime: '48 hours',
+                        minOrder: 80,
+                        paymentTerms: 'Net 21'
+                    };
+                }
+                
+                // Default to Vegetables for unknown items
+                return {
                     id: '1',
-                    name: 'Fresh Produce', // Removed "AWS" prefix
-                    category: 'Fresh Produce', // Updated category
+                    name: 'Fresh Produce',
+                    category: 'Vegetables',
                     contact: {
                         phone: '+1-555-0101',
                         email: 'orders@freshproduce.com',
@@ -384,7 +494,15 @@ app.get('/api/order-stock', async (req, res) => {
                     deliveryTime: '24 hours',
                     minOrder: 50,
                     paymentTerms: 'Net 15'
-                },
+                };
+            };
+            
+            const supplierData = getSupplierAndCategory(item.item_name);
+            
+            return {
+                id: item.order_id || `order-${Date.now()}-${Math.random()}`,
+                orderNumber: item.order_id ? `AWS-${item.order_id.slice(-6)}` : `AWS-${Date.now()}`, // Shorter order number
+                supplier: supplierData,
                 items: [{
                     id: item.item_id || '1',
                     name: item.item_name || 'Papaya', // Default to Papaya since that's what your table has

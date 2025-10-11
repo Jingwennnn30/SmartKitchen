@@ -18,22 +18,28 @@ interface StockData {
     minimum: number;
 }
 
-interface StockLevelChartProps {
-    category: string;
-}
-
 // Mock data - you would typically get this from your backend
 const data: StockData[] = [
-    { name: 'Milk', current: 15, minimum: 10 },
-    { name: 'Chicken Breast', current: 50, minimum: 30 },
-    { name: 'Potato', current: 80, minimum: 40 },
-    { name: 'Broccoli', current: 30, minimum: 20 },
-    { name: 'Olive Oil', current: 50, minimum: 25 },
+    { name: 'Fish Fillet', current: 8.5, minimum: 7 },
+    { name: 'Grilled Chicken', current: 30.0, minimum: 18 },
+    { name: 'Cherry', current: 2.0, minimum: 1 },
+    { name: 'Tomatoes', current: 5.0, minimum: 7 },
+    { name: 'Cucumber', current: 4.0, minimum: 5 },
+    { name: 'Green Beans', current: 3.5, minimum: 2 },
+    { name: 'Shrimp', current: 17.0, minimum: 12 },
+    { name: 'Carrot', current: 6.0, minimum: 5 },
+    { name: 'Onion', current: 5.5, minimum: 2 },
+    { name: 'Beef Patty', current: 12.0, minimum: 15 },
+    { name: 'Duck', current: 17.0, minimum: 15 },
+    { name: 'Eggplant', current: 3.0, minimum: 5 },
+    { name: 'Corn', current: 4.0, minimum: 3 },
+    { name: 'Egg', current: 100, minimum: 50 },
+    { name: 'Milk', current: 10.0, minimum: 5 },
 ];
 
-const StockLevelChart: React.FC<StockLevelChartProps> = ({ category }) => {
-    // In a real application, you would filter data based on category
-    const filteredData = category === 'All' ? data : data.filter(item => item.name === category);
+const StockLevelChart: React.FC = () => {
+    // Show all data without category filtering
+    const filteredData = data;
 
     return (
         <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -56,35 +62,6 @@ const StockLevelChart: React.FC<StockLevelChartProps> = ({ category }) => {
                     />
                 </BarChart>
             </ResponsiveContainer>
-            
-            {/* Show All Link */}
-            <Box sx={{ 
-                position: 'absolute', 
-                bottom: 0, 
-                right: 0, 
-                padding: 1 
-            }}>
-                <Link 
-                    href="#" 
-                    underline="always" 
-                    color="primary" 
-                    sx={{ 
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        '&:hover': {
-                            color: 'primary.dark'
-                        }
-                    }}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        // Handle Show All functionality here
-                        console.log('Show All clicked');
-                    }}
-                >
-                    Show All
-                </Link>
-            </Box>
         </Box>
     );
 };
