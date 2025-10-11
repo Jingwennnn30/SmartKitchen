@@ -175,11 +175,23 @@ const PerformanceTrends: React.FC = () => {
         }
     }, [selectedRange.startDate, selectedRange.endDate]); // Removed selectedDates.length dependency
     
+    // Get today's date in Malaysian time
+    const getTodayInMalaysianTime = () => {
+        const now = new Date();
+        // Malaysia is UTC+8
+        const malaysianTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+        const year = malaysianTime.getUTCFullYear();
+        const month = String(malaysianTime.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(malaysianTime.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Generate calendar days for current month
     const getCurrentMonthDays = () => {
         const year = 2025;
         const daysInMonth = new Date(year, currentMonth, 0).getDate();
         const firstDay = new Date(year, currentMonth - 1, 1).getDay();
+        const todayMalaysianTime = getTodayInMalaysianTime();
         
         const days = [];
         // Add empty cells for days before the first day of the month
@@ -208,7 +220,7 @@ const PerformanceTrends: React.FC = () => {
             days.push({
                 day,
                 date,
-                isToday: date === '2025-10-06',
+                isToday: date === todayMalaysianTime,
                 isSelected,
                 isStartDate,
                 isEndDate,
