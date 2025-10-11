@@ -1208,82 +1208,359 @@ if (document.getElementById('hourlyChart')) {{
 
 
 def generate_fb_management_recommendations(data, report_type):
-    """Generate 6 targeted F&B management recommendations with AI insights"""
+    """Generate dynamic, period-specific F&B management recommendations using AI"""
     
+    # Extract key data for context
     total_orders = data.get('total_orders', 0)
     total_revenue = data.get('total_revenue', 0)
     avg_order_value = data.get('avg_order_value', 0)
     peak_hour = data.get('peak_hour', 12)
     daily_avg = data.get('daily_avg_orders', 0)
+    date_range_days = data.get('date_range_days', 1)
+    start_date = data.get('start_date', datetime.now())
     
-    recommendations = []
-    
-    # 1. Revenue Optimization (High Priority - Usually Highlighted)
-    if avg_order_value < 120:
-        recommendations.append({
-            'icon': '💰',
-            'title': 'Increase Average Order Value',
-            'detail': f'Current average order of RM {avg_order_value:.2f} shows opportunity for upselling. Implement premium menu items, combo deals, and staff upselling training to target RM {avg_order_value * 1.25:.2f} average order value.',
-            'metric': f'Target: +{((avg_order_value * 1.25) - avg_order_value):.0f}% revenue increase',
-            'priority': 'high'
-        })
+    # Format date context for AI
+    if isinstance(start_date, datetime):
+        date_str = start_date.strftime('%Y-%m-%d')
+        day_of_week = start_date.strftime('%A')
+        month_name = start_date.strftime('%B')
     else:
-        recommendations.append({
-            'icon': '💰',
-            'title': 'Revenue Performance Excellence',
-            'detail': f'Outstanding RM {avg_order_value:.2f} average order value demonstrates premium positioning. Focus on maintaining quality standards and exploring market expansion opportunities.',
-            'metric': f'Revenue Trend: Exceeding industry benchmarks',
-            'priority': 'medium'
-        })
+        date_str = str(start_date)
+        day_of_week = "Unknown"
+        month_name = "Unknown"
     
-    # 2. Staff Efficiency Optimization (High Priority - Usually Highlighted)
-    recommendations.append({
-        'icon': '👥',
-        'title': 'Improve Staff Efficiency',
-        'detail': f'Peak operations at {peak_hour}:00 indicate optimal timing for staff training programs. Implement AI-powered scheduling and cross-training to achieve 90%+ efficiency during high-demand periods.',
-        'metric': 'Target: 90% efficiency within 3 months',
-        'priority': 'high'
-    })
+    try:
+        # Create period-specific context for AI
+        if report_type == 'daily':
+            context_prompt = f"""
+            You are an expert F&B consultant analyzing ONE DAY's performance data from a restaurant.
+            
+            DATE: {date_str} ({day_of_week})
+            DAILY PERFORMANCE:
+            - Orders: {total_orders}
+            - Revenue: RM {total_revenue:,.2f}
+            - Average Order Value: RM {avg_order_value:.2f}
+            - Peak Hour: {peak_hour}:00
+            
+            Generate exactly 6 actionable daily recommendations focusing on:
+            1. TODAY's operational adjustments
+            2. TOMORROW's preparation priorities  
+            3. Immediate staff actions needed
+            4. Today's customer service improvements
+            5. End-of-day optimization tasks
+            6. Next-day readiness planning
+            
+            Each recommendation should be specific to this single day's data and provide immediate actionable steps for TODAY and TOMORROW.
+            """
+            
+        elif report_type == 'weekly':
+            weekly_avg_orders = total_orders / max(date_range_days, 1)
+            context_prompt = f"""
+            You are an expert F&B consultant analyzing WEEKLY performance data from a restaurant.
+            
+            WEEK PERIOD: {date_str} ({date_range_days} days)
+            WEEKLY PERFORMANCE:
+            - Total Orders: {total_orders} ({weekly_avg_orders:.1f} per day)
+            - Total Revenue: RM {total_revenue:,.2f}
+            - Average Order Value: RM {avg_order_value:.2f}
+            - Peak Hour Pattern: {peak_hour}:00
+            
+            Generate exactly 6 strategic weekly recommendations focusing on:
+            1. WEEKLY pattern optimization
+            2. NEXT WEEK's strategic priorities
+            3. Weekly staff scheduling improvements
+            4. Customer behavior pattern adjustments
+            5. Weekly menu performance optimization
+            6. Operational efficiency for next week
+            
+            Each recommendation should address weekly trends, patterns, and provide strategic guidance for the upcoming week.
+            """
+            
+        else:  # monthly
+            monthly_avg_orders = total_orders / max(date_range_days, 1)
+            context_prompt = f"""
+            You are an expert F&B consultant analyzing MONTHLY performance data from a restaurant.
+            
+            MONTH PERIOD: {month_name} ({date_range_days} days analyzed)
+            MONTHLY PERFORMANCE:
+            - Total Orders: {total_orders} ({monthly_avg_orders:.1f} per day)
+            - Total Revenue: RM {total_revenue:,.2f}
+            - Average Order Value: RM {avg_order_value:.2f}
+            - Peak Hour Trend: {peak_hour}:00
+            
+            Generate exactly 6 strategic monthly recommendations focusing on:
+            1. MONTHLY growth opportunities
+            2. NEXT MONTH's strategic planning
+            3. Long-term operational improvements
+            4. Customer retention strategies
+            5. Financial performance optimization
+            6. Market expansion considerations
+            
+            Each recommendation should address monthly trends, growth opportunities, and provide strategic planning for sustainable business growth.
+            """
+        
+        # Enhanced AI prompt for better recommendations
+        full_prompt = context_prompt + f"""
+        
+        RESPONSE FORMAT: Return exactly 6 recommendations as a JSON array with this structure:
+        [
+            {{
+                "icon": "emoji_icon",
+                "title": "Brief Title (max 50 chars)",
+                "detail": "Detailed explanation with specific actions and context (max 150 words)",
+                "metric": "Measurable target or expected outcome",
+                "priority": "high|medium|low"
+            }}
+        ]
+        
+        REQUIREMENTS:
+        - Use contextual data (orders, revenue, peak times) in each recommendation
+        - Make recommendations specific to the {report_type} timeframe
+        - Include specific numerical targets when possible
+        - Priority levels: 2-3 "high", 2-3 "medium", 1-2 "low"
+        - Use relevant emojis for visual appeal
+        - Be specific about timelines based on report type
+        
+        Return only the JSON array, no other text.
+        """
+        
+        # Updated model configuration for Amazon Nova Pro
+        try:
+            # Try Nova Pro first (primary model)
+            bedrock_runtime_nova = boto3.client(
+                "bedrock-runtime",
+                region_name=BEDROCK_REGION,
+                endpoint_url="https://bedrock-runtime.us-east-1.amazonaws.com"
+            )
+            
+            response = bedrock_runtime_nova.invoke_model(
+                modelId="amazon.nova-pro-v1:0",
+                body=json.dumps({
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [{"text": full_prompt}]
+                        }
+                    ],
+                    "inferenceConfig": {
+                        "max_new_tokens": 2000,
+                        "temperature": 0.7,
+                        "top_p": 0.9
+                    }
+                }),
+                contentType="application/json",
+                accept="application/json"
+            )
+            
+            result = json.loads(response["body"].read())
+            ai_response = result.get("output", {}).get("message", {}).get("content", [{}])[0].get("text", "").strip()
+            
+            print(f"Amazon Nova Pro response for {report_type}: {ai_response[:200]}...")
+            
+            # Parse JSON response
+            try:
+                # Extract JSON from response (handle potential markdown formatting)
+                json_match = re.search(r'\[.*\]', ai_response, re.DOTALL)
+                if json_match:
+                    ai_recommendations = json.loads(json_match.group(0))
+                    
+                    if isinstance(ai_recommendations, list) and len(ai_recommendations) >= 6:
+                        print(f"Successfully generated {len(ai_recommendations)} AI recommendations for {report_type}")
+                        return ai_recommendations[:6]  # Return exactly 6
+                        
+            except json.JSONDecodeError as je:
+                print(f"JSON parsing error: {je}")
+                
+        except Exception as nova_error:
+            print(f"Nova Pro failed: {nova_error}, falling back to Llama")
+            
+            # Fallback to Llama 3
+            response = bedrock_runtime.invoke_model(
+                modelId=MODEL_ID,
+                body=json.dumps({
+                    "prompt": f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n{full_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
+                    "max_gen_len": 1500,
+                    "temperature": 0.7,
+                    "top_p": 0.9
+                }),
+                contentType="application/json",
+                accept="application/json"
+            )
+            
+            result = json.loads(response["body"].read())
+            ai_response = result.get("generation", "").strip()
+            
+            # Parse JSON response from Llama
+            try:
+                json_match = re.search(r'\[.*\]', ai_response, re.DOTALL)
+                if json_match:
+                    ai_recommendations = json.loads(json_match.group(0))
+                    
+                    if isinstance(ai_recommendations, list) and len(ai_recommendations) >= 6:
+                        print(f"Successfully generated {len(ai_recommendations)} Llama AI recommendations for {report_type}")
+                        return ai_recommendations[:6]
+                        
+            except json.JSONDecodeError:
+                print(f"Llama JSON parsing failed, using fallback")
+        
+    except Exception as e:
+        print(f"AI recommendation generation failed: {str(e)}")
     
-    # 3. Peak Hour Operations (Medium-High Priority)
-    peak_efficiency = "lunch service" if 11 <= peak_hour <= 14 else "dinner rush" if 18 <= peak_hour <= 21 else "off-peak optimization"
-    recommendations.append({
-        'icon': '⏰',
-        'title': 'Optimize Peak Hour Operations',
-        'detail': f'Peak at {peak_hour}:00 shows strong {peak_efficiency} performance. Deploy queue management system and pre-prep optimization to handle +30% capacity during peak periods.',
-        'metric': f'Reduce wait times to <10 minutes during peak hours',
-        'priority': 'high' if total_orders > 50 else 'medium'
-    })
+    # Enhanced fallback recommendations based on report type
+    return generate_fallback_recommendations(report_type, total_orders, total_revenue, avg_order_value, peak_hour, date_str, day_of_week)
+
+
+def generate_fallback_recommendations(report_type, total_orders, total_revenue, avg_order_value, peak_hour, date_str, day_of_week):
+    """Generate period-specific fallback recommendations when AI fails"""
     
-    # 4. Customer Experience Enhancement (Medium Priority)
-    dining_pattern = "family dining" if avg_order_value > 150 else "casual dining" if avg_order_value > 100 else "quick service"
-    recommendations.append({
-        'icon': '🌟',
-        'title': 'Enhance Customer Experience through Personalization',
-        'detail': f'Customer preference for {dining_pattern} creates opportunity for loyalty programs and personalized service. Implement customer preference tracking and targeted promotions.',
-        'metric': 'Target: 15% customer retention rate increase',
-        'priority': 'medium'
-    })
+    if report_type == 'daily':
+        return [
+            {
+                'icon': '📋',
+                'title': 'Today\'s Action Plan',
+                'detail': f'Based on {total_orders} orders today ({day_of_week}), focus on peak hour prep for {peak_hour}:00 tomorrow. Review today\'s RM {avg_order_value:.2f} average and plan upselling strategies.',
+                'metric': f'Target: +10% tomorrow vs today\'s {total_orders} orders',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '👥',
+                'title': 'Tomorrow\'s Staff Readiness',
+                'detail': f'Today\'s {day_of_week} pattern shows peak at {peak_hour}:00. Ensure adequate staffing and prep for tomorrow\'s anticipated demand based on today\'s performance.',
+                'metric': 'Preparation timeline: Complete by EOD today',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '💰',
+                'title': 'Daily Revenue Optimization',
+                'detail': f'Today\'s RM {total_revenue:,.2f} revenue provides baseline for tomorrow. Focus on increasing average order value from RM {avg_order_value:.2f} through targeted upselling.',
+                'metric': f'Target: RM {avg_order_value * 1.15:.2f} average order value tomorrow',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '🍽️',
+                'title': 'Menu Performance Review',
+                'detail': f'Analyze today\'s {total_orders} orders for bestselling items. Prepare high-demand items for tomorrow and adjust portions based on today\'s consumption patterns.',
+                'metric': 'Daily menu optimization: Complete tonight',
+                'priority': 'medium'
+            },
+            {
+                'icon': '⏰',
+                'title': 'Peak Hour Efficiency',
+                'detail': f'Today\'s peak at {peak_hour}:00 shows service capacity. Fine-tune tomorrow\'s prep schedule and staff positioning to handle similar or increased demand.',
+                'metric': 'Target: <5 minute wait times during peak',
+                'priority': 'medium'
+            },
+            {
+                'icon': '📊',
+                'title': 'End-of-Day Analysis',
+                'detail': f'Complete today\'s performance review comparing {total_orders} orders to daily targets. Use insights for tomorrow\'s strategic planning and resource allocation.',
+                'metric': 'Analysis deadline: Before close tonight',
+                'priority': 'low'
+            }
+        ]
     
-    # 5. Kitchen Operations Automation (Medium Priority)
-    recommendations.append({
-        'icon': '🤖',
-        'title': 'Automate Kitchen Operations',
-        'detail': f'AI integration opportunity in food preparation and inventory management. Smart kitchen systems can reduce waste by 15% and improve efficiency by 25% based on current {total_orders}-order volume.',
-        'metric': 'Target: 25% efficiency improvement, 15% waste reduction',
-        'priority': 'medium'
-    })
+    elif report_type == 'weekly':
+        weekly_avg = total_orders / 7 if total_orders > 0 else 0
+        return [
+            {
+                'icon': '📈',
+                'title': 'Weekly Performance Analysis',
+                'detail': f'This week\'s {total_orders} total orders (avg {weekly_avg:.1f}/day) establishes baseline. Identify strongest days and replicate successful strategies next week.',
+                'metric': f'Target: +15% next week vs {total_orders} orders',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '🎯',
+                'title': 'Next Week\'s Strategic Focus',
+                'detail': f'Based on weekly peak at {peak_hour}:00 and RM {avg_order_value:.2f} average, plan next week\'s staffing, inventory, and promotional strategies.',
+                'metric': 'Strategic plan completion: Weekend',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '👥',
+                'title': 'Weekly Staff Optimization',
+                'detail': f'Analyze this week\'s performance patterns to optimize next week\'s scheduling. Focus on peak efficiency during {peak_hour}:00 timeframe.',
+                'metric': 'Schedule optimization: Complete by Sunday',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '🍽️',
+                'title': 'Menu Strategy Review',
+                'detail': f'Weekly revenue of RM {total_revenue:,.2f} indicates menu performance trends. Adjust next week\'s offerings based on bestsellers and profit margins.',
+                'metric': 'Menu planning: Weekend completion',
+                'priority': 'medium'
+            },
+            {
+                'icon': '💰',
+                'title': 'Revenue Growth Planning',
+                'detail': f'This week\'s RM {avg_order_value:.2f} average order value sets benchmark. Develop next week\'s upselling and cross-selling strategies.',
+                'metric': f'Target: RM {avg_order_value * 1.2:.2f} average next week',
+                'priority': 'medium'
+            },
+            {
+                'icon': '📊',
+                'title': 'Customer Pattern Analysis',
+                'detail': f'Weekly customer behavior patterns from {total_orders} orders reveal preferences. Use insights for next week\'s customer engagement strategies.',
+                'metric': 'Analysis completion: Sunday evening',
+                'priority': 'low'
+            }
+        ]
     
-    # 6. Performance Analytics & Forecasting (Lower Priority)
-    recommendations.append({
-        'icon': '📊',
-        'title': 'Advanced Performance Analytics',
-        'detail': f'Implement predictive analytics for demand forecasting and menu optimization. Current {report_type} patterns show potential for 20% better resource allocation through data-driven decisions.',
-        'metric': 'Target: 97% demand prediction accuracy',
-        'priority': 'low'
-    })
-    
-    return recommendations
+    else:  # monthly
+        monthly_avg = total_orders / 30 if total_orders > 0 else 0
+        return [
+            {
+                'icon': '🚀',
+                'title': 'Monthly Growth Strategy',
+                'detail': f'This month\'s {total_orders} orders (avg {monthly_avg:.1f}/day) and RM {total_revenue:,.2f} revenue establish growth baseline. Plan next month\'s expansion initiatives.',
+                'metric': f'Target: +20% next month vs {total_orders} orders',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '📊',
+                'title': 'Long-term Performance Optimization',
+                'detail': f'Monthly average order value of RM {avg_order_value:.2f} indicates pricing strategy effectiveness. Develop next month\'s revenue optimization plan.',
+                'metric': f'Target: RM {avg_order_value * 1.25:.2f} average next month',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '🎯',
+                'title': 'Strategic Market Positioning',
+                'detail': f'Monthly peak hour trend at {peak_hour}:00 shows customer preferences. Align next month\'s marketing and operational strategies accordingly.',
+                'metric': 'Strategic plan: Complete this week',
+                'priority': 'high',
+                'highlighted': True
+            },
+            {
+                'icon': '💼',
+                'title': 'Operational Excellence Initiative',
+                'detail': f'Based on monthly performance trends, implement next month\'s efficiency improvements and cost optimization strategies.',
+                'metric': 'Initiative launch: First week of next month',
+                'priority': 'medium'
+            },
+            {
+                'icon': '👥',
+                'title': 'Staff Development Program',
+                'detail': f'Monthly service patterns indicate training opportunities. Plan next month\'s staff development and performance enhancement programs.',
+                'metric': 'Program planning: Complete by month-end',
+                'priority': 'medium'
+            },
+            {
+                'icon': '🌟',
+                'title': 'Customer Experience Enhancement',
+                'detail': f'Monthly customer feedback and RM {total_revenue:,.2f} revenue performance guide next month\'s experience improvement initiatives.',
+                'metric': 'Experience plan: Launch next month',
+                'priority': 'low'
+            }
+        ]
 
 
 def create_performance_summary(data):
@@ -1591,52 +1868,135 @@ def generate_ai_analysis(report_type, data, start_date, end_date):
         - Staff Efficiency: {staff_efficiency}%
         """
 
+        # Enhanced period-specific prompts with real data context
+        date_range_days = data.get('date_range_days', 1)
+        if isinstance(start_date, datetime):
+            date_str = start_date.strftime('%Y-%m-%d')
+            day_of_week = start_date.strftime('%A')
+            month_name = start_date.strftime('%B')
+        else:
+            date_str = str(start_date)
+            day_of_week = "Unknown"
+            month_name = "Unknown"
+        
+        # Construct comprehensive period-specific prompt
         if report_type == 'daily':
             prompt = base_context + f"""
             
-            Provide a comprehensive daily performance analysis covering:
-            1. Overall Performance Assessment (2-3 sentences)
-            2. Key Insights & Patterns (3-4 bullet points)
-            3. Operational Recommendations (2-3 actionable suggestions)
-            4. Tomorrow's Focus Areas (2-3 specific priorities)
+            DAILY ANALYSIS FOR: {date_str} ({day_of_week})
             
-            Focus on immediate actionable insights for daily operations. Be specific about what the restaurant should focus on for the next day.
+            You are analyzing ONE SPECIFIC DAY's restaurant performance. Focus on immediate, actionable insights for TODAY and TOMORROW.
+            
+            Provide a comprehensive daily analysis covering:
+            1. **Today's Performance Highlights** (2-3 sentences about this specific day's results)
+            2. **{day_of_week} Pattern Analysis** (3-4 insights about how this day typically performs)
+            3. **Immediate Action Items** (3-4 specific tasks to complete before tomorrow)
+            4. **Tomorrow's Preparation Strategy** (2-3 concrete steps for tomorrow's success)
+            
+            KEY FOCUS: 
+            - What happened TODAY that was significant?
+            - What should the restaurant do TONIGHT to prepare for tomorrow?
+            - How does this {day_of_week}'s performance compare to typical {day_of_week} patterns?
+            - What specific actions will improve TOMORROW's results?
+            
+            Be specific about timelines (today, tonight, tomorrow morning, etc.)
             """
         elif report_type == 'weekly':
+            weekly_avg = total_orders / max(date_range_days, 1)
             prompt = base_context + f"""
             
-            Provide a comprehensive weekly performance analysis covering:
-            1. Weekly Performance Summary (2-3 sentences)
-            2. Trend Analysis & Patterns (3-4 bullet points about weekly patterns)
-            3. Strategic Recommendations (3-4 medium-term suggestions)
-            4. Next Week's Priorities (2-3 focus areas for improvement)
+            WEEKLY ANALYSIS FOR: Week ending {date_str} ({date_range_days} days analyzed)
             
-            Focus on weekly trends, customer patterns, and strategic adjustments for next week.
+            You are analyzing a FULL WEEK's restaurant performance. Focus on weekly patterns and next week's strategic planning.
+            
+            Provide a comprehensive weekly analysis covering:
+            1. **Week Performance Summary** (2-3 sentences about this week's overall results vs typical weeks)
+            2. **Weekly Pattern Insights** (4-5 bullet points about daily variations, peak days, customer behavior patterns)
+            3. **Strategic Adjustments** (3-4 medium-term improvements for operational efficiency)
+            4. **Next Week's Action Plan** (3-4 specific priorities and preparations for next week)
+            
+            KEY FOCUS:
+            - Which days this week were strongest/weakest and why?
+            - What weekly patterns emerged from {weekly_avg:.1f} average daily orders?
+            - How should staffing, inventory, and operations be adjusted for next week?
+            - What weekly trends indicate opportunities for improvement?
+            
+            Think in terms of weekly cycles, staff scheduling, inventory planning, and customer pattern optimization.
             """
         else:  # monthly
+            monthly_avg = total_orders / max(date_range_days, 1)
             prompt = base_context + f"""
             
-            Provide a comprehensive monthly performance analysis covering:
-            1. Monthly Performance Overview (2-3 sentences)
-            2. Long-term Trends & Insights (4-5 bullet points about monthly patterns)
-            3. Strategic Growth Opportunities (3-4 long-term recommendations)
-            4. Next Month's Strategic Focus (3-4 high-impact priorities)
+            MONTHLY ANALYSIS FOR: {month_name} ({date_range_days} days analyzed)
             
-            Focus on long-term trends, growth opportunities, and strategic planning for sustainable business growth.
+            You are analyzing a FULL MONTH's restaurant performance. Focus on long-term trends and strategic growth planning.
+            
+            Provide a comprehensive monthly analysis covering:
+            1. **Monthly Performance Overview** (3-4 sentences about this month's strategic achievements and challenges)
+            2. **Long-term Trend Analysis** (5-6 bullet points about monthly patterns, growth trends, seasonal effects)
+            3. **Strategic Growth Opportunities** (4-5 long-term recommendations for business expansion and optimization)
+            4. **Next Month's Strategic Priorities** (3-4 high-impact initiatives for sustainable growth)
+            
+            KEY FOCUS:
+            - What are the significant month-over-month trends from {monthly_avg:.1f} daily average?
+            - How do seasonal factors affect performance in {month_name}?
+            - What strategic investments or changes should be prioritized next month?
+            - Which growth opportunities have the highest ROI potential?
+            
+            Think strategically about market positioning, competitive advantages, financial optimization, and sustainable growth.
             """
 
-        # Call Llama 3 model for AI analysis
-        response = bedrock_runtime.invoke_model(
-            modelId=MODEL_ID,
-            body=json.dumps({
-                "prompt": f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
-                "max_gen_len": 800,
-                "temperature": 0.7,
-                "top_p": 0.9
-            }),
-            contentType="application/json",
-            accept="application/json"
-        )
+        # Try Amazon Nova Pro first, fallback to Llama 3
+        try:
+            # Amazon Nova Pro for enhanced AI analysis
+            bedrock_runtime_nova = boto3.client(
+                "bedrock-runtime",
+                region_name=BEDROCK_REGION,
+                endpoint_url="https://bedrock-runtime.us-east-1.amazonaws.com"
+            )
+            
+            response = bedrock_runtime_nova.invoke_model(
+                modelId="amazon.nova-pro-v1:0",
+                body=json.dumps({
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [{"text": prompt}]
+                        }
+                    ],
+                    "inferenceConfig": {
+                        "max_new_tokens": 1200,
+                        "temperature": 0.7,
+                        "top_p": 0.9
+                    }
+                }),
+                contentType="application/json",
+                accept="application/json"
+            )
+            
+            result = json.loads(response["body"].read())
+            ai_analysis = result.get("output", {}).get("message", {}).get("content", [{}])[0].get("text", "").strip()
+            
+            print(f"Amazon Nova Pro Analysis Generated for {report_type}: {ai_analysis[:200]}...")
+            
+        except Exception as nova_error:
+            print(f"Nova Pro failed: {nova_error}, using Llama 3 fallback")
+            
+            # Fallback to Llama 3 model
+            response = bedrock_runtime.invoke_model(
+                modelId=MODEL_ID,
+                body=json.dumps({
+                    "prompt": f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
+                    "max_gen_len": 1000,
+                    "temperature": 0.7,
+                    "top_p": 0.9
+                }),
+                contentType="application/json",
+                accept="application/json"
+            )
+            
+            result = json.loads(response["body"].read())
+            ai_analysis = result.get("generation", "").strip()
         
         result = json.loads(response["body"].read())
         ai_analysis = result.get("generation", "").strip()
