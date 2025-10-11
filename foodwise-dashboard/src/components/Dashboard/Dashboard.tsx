@@ -9,8 +9,9 @@ import RestockPredictionChart from './RestockPredictionChart';
 import LowStock from './LowStock';
 import KommunicateChat from '../shared/KommunicateChat';
 import DashboardVoiceAlerts from './DashboardVoiceAlerts';
+import LowStockSection from './LowStockSection';
 
-// Styled components
+
 const DashboardContainer = styled(Box)({
     width: '100%'
 });
@@ -27,63 +28,6 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
         boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)'
     }
 }));
-
-// Low Stock Section Component
-const LowStockSection: React.FC = () => {
-    const [lowStockCount, setLowStockCount] = useState<number>(0);
-
-    useEffect(() => {
-        const fetchLowStockCount = async () => {
-            try {
-                const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-                const response = await fetch(`${backendUrl}/api/low-stock`);
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        setLowStockCount(result.data.length);
-                    }
-                }
-            } catch (err) {
-                console.error('Error fetching low stock count:', err);
-            }
-        };
-
-        fetchLowStockCount();
-        
-        // Refresh count every 2 minutes to match the LowStock component
-        const interval = setInterval(fetchLowStockCount, 120000);
-        
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <Card sx={{ 
-            height: '400px', 
-            p: 2,
-            boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-            borderRadius: '10px'
-        }}>
-            <Box sx={{ 
-                height: '100%',
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                boxShadow: 'inset 0px 1px 3px rgba(0, 0, 0, 0.1)',
-                border: '1px solid rgba(0, 0, 0, 0.08)',
-                p: 2,
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
-                <Typography variant="h6" gutterBottom>
-                    Low Stock Alerts ({lowStockCount} items)
-                </Typography>
-                <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                    <LowStock />
-                </Box>
-            </Box>
-        </Card>
-    );
-};
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
