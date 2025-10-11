@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MenuItem, CartItem} from '../../types/menu';
 import { MenuService } from '../../services/menuOrderService';
-import Card from '../shared/Card';
+import Card from '@mui/material/Card';
 import { 
     Grid, Typography, Button, IconButton, Badge, Dialog, 
     DialogTitle, DialogContent, DialogActions, Box,
