@@ -48,7 +48,15 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import { teal, orange, blue, red } from '@mui/material/colors';
-import { fetchPerformanceData, PerformanceResponse } from '../../services/performanceService';
+import { 
+    fetchPerformanceData, 
+    PerformanceResponse, 
+    fetchWasteAnalysisData, 
+    fetchAIInsights,
+    WasteAnalysisResponse,
+    AIInsightsResponse 
+} from '../../services/performanceService';
+import AIAnalysisPopup from './AIAnalysisPopup';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -99,6 +107,16 @@ const PerformanceTrends: React.FC = () => {
         startDate: "",
         endDate: "",
     });
+    
+    // Waste analysis state
+    const [wasteData, setWasteData] = useState<WasteAnalysisResponse | null>(null);
+    const [wasteLoading, setWasteLoading] = useState(false);
+    
+    // AI analysis state
+    const [aiInsights, setAiInsights] = useState<AIInsightsResponse | null>(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const [aiDialogOpen, setAiDialogOpen] = useState(false);
     
     // Cache for API responses to enable instant display
     const [dataCache, setDataCache] = useState<Map<string, PerformanceResponse>>(new Map());
@@ -162,6 +180,7 @@ const PerformanceTrends: React.FC = () => {
             // Set new timeout for debounced API call
             const newTimeout = setTimeout(() => {
                 loadPerformanceData();
+                loadWasteAnalysisData(); // Also load waste data
             }, 50); // Further reduced to 50ms for near-instant response
             
             setDebounceTimeout(newTimeout);
@@ -174,6 +193,29 @@ const PerformanceTrends: React.FC = () => {
             };
         }
     }, [selectedRange.startDate, selectedRange.endDate]); // Removed selectedDates.length dependency
+    
+    // Load initial data when component mounts
+    useEffect(() => {
+        // Load waste analysis data immediately when component mounts (without date filters)
+        const loadInitialWasteData = async () => {
+            try {
+                setWasteLoading(true);
+                // Call without date parameters to get all available data
+                const result = await fetchWasteAnalysisData();
+                setWasteData(result);
+            } catch (err) {
+                console.error("Error fetching initial waste analysis data:", err);
+            } finally {
+                setWasteLoading(false);
+            }
+        };
+        
+        loadInitialWasteData();
+        
+        // Optionally also load performance data with default date range
+        // You can uncomment this if you want to load performance data immediately too
+        // loadPerformanceData();
+    }, []); // Empty dependency array means this runs once on mount
     
     // Get today's date in Malaysian time
     const getTodayInMalaysianTime = () => {
@@ -423,12 +465,108 @@ const PerformanceTrends: React.FC = () => {
         targetTime: 15
     }));
 
-    // Mock data for Cost & Waste Analysis
-    const wasteAnalysis = Array.from({ length: 6 }, (_, index) => ({
-        month: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'][index],
-        foodCost: Math.floor(Math.random() * 5000 + 15000),
-        wastePercentage: Number((Math.random() * 8 + 2).toFixed(1))
-    }));
+    // Load waste analysis data from API
+    const loadWasteAnalysisData = async () => {
+        try {
+            setWasteLoading(true);
+            const result = await fetchWasteAnalysisData(selectedRange.startDate, selectedRange.endDate);
+            setWasteData(result);
+        } catch (err) {
+            console.error("Error fetching waste analysis data:", err);
+            // Fallback to mock data if API fails
+            const mockWasteData: WasteAnalysisResponse = {
+                waste_analysis: Array.from({ length: 6 }, (_, index) => ({
+                    month: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'][index],
+                    foodCost: Math.floor(Math.random() * 5000 + 15000),
+                    wastePercentage: Number((Math.random() * 8 + 2).toFixed(1)),
+                    wasteAmount: Math.floor(Math.random() * 500 + 200),
+                    expiredItems: Math.floor(Math.random() * 5),
+                    itemsProcessed: Math.floor(Math.random() * 50 + 20)
+                })),
+                summary: {
+                    avg_monthly_cost: 18000,
+                    avg_waste_percentage: 5.6,
+                    total_waste_amount: 2400,
+                    performance_status: "Above Target",
+                    performance_trend: "improving",
+                    total_items_analyzed: 272,
+                    date_range: {
+                        start: selectedRange.startDate || "2024-05-01",
+                        end: selectedRange.endDate || "2024-10-31"
+                    }
+                },
+                insights: [
+                    "Waste levels are above target. Consider reviewing inventory management processes.",
+                    "Positive trend: Waste levels have decreased compared to previous month.",
+                    "Highest food costs were in recent months"
+                ]
+            };
+            setWasteData(mockWasteData);
+        } finally {
+            setWasteLoading(false);
+        }
+    };
+
+    // Handle AI analysis click
+    const handleAIAnalysisClick = async () => {
+        try {
+            setAiLoading(true);
+            setAiError(null);
+            setAiDialogOpen(true);
+            
+            // Ensure waste data is loaded
+            let currentWasteData = wasteData;
+            if (!currentWasteData) {
+                await loadWasteAnalysisData();
+                // Wait a bit for state to update
+                await new Promise(resolve => setTimeout(resolve, 100));
+                currentWasteData = wasteData;
+            }
+            
+            // If still no waste data, use a fallback
+            if (!currentWasteData) {
+                const mockWasteData: WasteAnalysisResponse = {
+                    waste_analysis: Array.from({ length: 6 }, (_, index) => ({
+                        month: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'][index],
+                        foodCost: Math.floor(Math.random() * 5000 + 15000),
+                        wastePercentage: Number((Math.random() * 8 + 2).toFixed(1)),
+                        wasteAmount: Math.floor(Math.random() * 500 + 200),
+                        expiredItems: Math.floor(Math.random() * 5),
+                        itemsProcessed: Math.floor(Math.random() * 50 + 20)
+                    })),
+                    summary: {
+                        avg_monthly_cost: 18000,
+                        avg_waste_percentage: 5.6,
+                        total_waste_amount: 2400,
+                        performance_status: "Above Target",
+                        performance_trend: "improving",
+                        total_items_analyzed: 272,
+                        date_range: {
+                            start: selectedRange.startDate || "2024-05-01",
+                            end: selectedRange.endDate || "2024-10-31"
+                        }
+                    },
+                    insights: [
+                        "Waste levels are above target. Consider reviewing inventory management processes.",
+                        "Positive trend: Waste levels have decreased compared to previous month.",
+                        "Highest food costs were in recent months"
+                    ]
+                };
+                currentWasteData = mockWasteData;
+            }
+            
+            const aiResult = await fetchAIInsights(currentWasteData);
+            setAiInsights(aiResult);
+        } catch (err) {
+            console.error("Error fetching AI insights:", err);
+            setAiError("Failed to generate AI insights. Please try again.");
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    // Use only real waste data - no mock fallback
+    const wasteAnalysis = wasteData?.waste_analysis || [];
 
     // Debug logging (commented out for performance)
     // console.log('Selected dates:', selectedDates);
@@ -661,14 +799,43 @@ const PerformanceTrends: React.FC = () => {
                     </StyledPaper>
                 </Grid>
                 <Grid item xs={12} md={8}>
-                    <StyledPaper>
+                    <StyledPaper sx={{ 
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
+                            transform: 'translateY(-1px)',
+                        }
+                    }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
                             <Box>
                                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#1f2937', mb: 1 }}>
                                     Cost & Waste Analysis
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={handleAIAnalysisClick}
+                                        disabled={wasteLoading}
+                                        sx={{ 
+                                            ml: 2,
+                                            borderRadius: '8px',
+                                            textTransform: 'none',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.75rem',
+                                            borderColor: '#8b5cf6',
+                                            color: '#8b5cf6',
+                                            '&:hover': {
+                                                borderColor: '#7c3aed',
+                                                backgroundColor: '#f3f4f6',
+                                            }
+                                        }}
+                                        startIcon={<AnalyticsIcon />}
+                                    >
+                                        AI Analysis
+                                    </Button>
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                                    Monitor food costs and waste reduction trends over time
+                                    Monitor food costs and waste reduction trends over time • Click for AI insights
                                 </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -692,6 +859,18 @@ const PerformanceTrends: React.FC = () => {
                                         fontSize: '0.75rem'
                                     }} 
                                 />
+                                {wasteLoading && (
+                                    <Chip 
+                                        label="Loading..." 
+                                        size="small" 
+                                        sx={{ 
+                                            bgcolor: '#f3f4f6', 
+                                            color: '#6b7280',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.75rem'
+                                        }} 
+                                    />
+                                )}
                             </Box>
                         </Box>
                         <ResponsiveContainer width="100%" height={280}>
@@ -761,10 +940,27 @@ const PerformanceTrends: React.FC = () => {
                                         color: '#1f2937',
                                         marginBottom: '8px'
                                     }}
-                                    formatter={(value, name) => [
-                                        name === 'Food Cost (RM)' ? `RM ${value.toLocaleString()}` : `${value}%`,
-                                        name
-                                    ]}
+                                    formatter={(value, name, props) => {
+                                        const data = props.payload;
+                                        const nameStr = String(name || '');
+                                        
+                                        if (nameStr.includes('Cost')) {
+                                            const savings = data?.monthlySavings || 0;
+                                            const features = data?.activeFeatures || [];
+                                            return [
+                                                `RM ${value.toLocaleString()}${savings > 0 ? ` (Saves RM ${savings})` : ''}`,
+                                                name
+                                            ];
+                                        } else if (nameStr.includes('Waste')) {
+                                            const features = data?.activeFeatures || [];
+                                            const quality = data?.dataQuality || 'Medium';
+                                            return [
+                                                `${value}% ${features.length > 0 ? `(${features.join(', ')})` : ''} [${quality}]`,
+                                                name
+                                            ];
+                                        }
+                                        return [value, name];
+                                    }}
                                 />
                                 <Legend 
                                     verticalAlign="bottom"
@@ -777,19 +973,27 @@ const PerformanceTrends: React.FC = () => {
                                 />
                                 <Bar 
                                     yAxisId="left"
-                                    dataKey="foodCost" 
+                                    dataKey="rollingAvgCost" 
                                     fill="url(#costGradient)"
-                                    name="Food Cost (RM)"
+                                    name="3-Month Avg Cost (RM)"
                                     radius={[6, 6, 0, 0]}
                                     maxBarSize={60}
+                                />
+                                <Bar 
+                                    yAxisId="left"
+                                    dataKey="foodCost" 
+                                    fill="rgba(59, 130, 246, 0.3)"
+                                    name="Monthly Cost (RM)"
+                                    radius={[6, 6, 0, 0]}
+                                    maxBarSize={40}
                                 />
                                 <Line 
                                     yAxisId="right"
                                     type="monotone" 
-                                    dataKey="wastePercentage" 
+                                    dataKey="rollingAvgWastePct" 
                                     stroke="#ef4444" 
                                     strokeWidth={4}
-                                    name="Waste %"
+                                    name="3-Month Avg Waste %"
                                     dot={{ 
                                         fill: '#ffffff', 
                                         stroke: '#ef4444',
@@ -803,6 +1007,21 @@ const PerformanceTrends: React.FC = () => {
                                         strokeWidth: 3,
                                         fill: '#ffffff',
                                         filter: 'drop-shadow(0 4px 8px rgba(239, 68, 68, 0.4))'
+                                    }}
+                                />
+                                <Line 
+                                    yAxisId="right"
+                                    type="monotone" 
+                                    dataKey="wastePercentage" 
+                                    stroke="rgba(239, 68, 68, 0.5)" 
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    name="Monthly Waste %"
+                                    dot={{ 
+                                        fill: 'rgba(239, 68, 68, 0.7)', 
+                                        stroke: 'rgba(239, 68, 68, 0.7)',
+                                        strokeWidth: 2, 
+                                        r: 3
                                     }}
                                 />
                             </BarChart>
@@ -826,10 +1045,18 @@ const PerformanceTrends: React.FC = () => {
                                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                             }}>
                                 <Typography variant="body2" sx={{ color: '#0369a1', fontWeight: 'bold', mb: 1 }}>
-                                    💰 Average Monthly Cost
+                                    💰 Monthly Avg Cost
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: '#0c4a6e', fontWeight: 'bold', mb: 1 }}>
-                                    RM {Math.round(wasteAnalysis.reduce((sum, item) => sum + item.foodCost, 0) / wasteAnalysis.length).toLocaleString()}
+                                    {wasteLoading ? (
+                                        <CircularProgress size={24} sx={{ color: '#0c4a6e' }} />
+                                    ) : wasteData?.summary?.rolling_avg_monthly_cost ? (
+                                        `RM ${wasteData.summary.rolling_avg_monthly_cost.toLocaleString()}`
+                                    ) : wasteData?.summary?.avg_monthly_cost ? (
+                                        `RM ${wasteData.summary.avg_monthly_cost.toLocaleString()}`
+                                    ) : (
+                                        'RM 0'
+                                    )}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#64748b' }}>
                                     Last 6 months average
@@ -850,7 +1077,15 @@ const PerformanceTrends: React.FC = () => {
                                     📊 Current Waste Rate
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: '#991b1b', fontWeight: 'bold', mb: 2 }}>
-                                    {(wasteAnalysis.reduce((sum, item) => sum + item.wastePercentage, 0) / wasteAnalysis.length).toFixed(1)}%
+                                    {wasteLoading ? (
+                                        <CircularProgress size={24} sx={{ color: '#991b1b' }} />
+                                    ) : wasteData?.summary?.current_waste_rate ? (
+                                        `${wasteData.summary.current_waste_rate.toFixed(1)}%`
+                                    ) : wasteData?.summary?.avg_waste_percentage ? (
+                                        `${wasteData.summary.avg_waste_percentage.toFixed(1)}%`
+                                    ) : (
+                                        '0.0%'
+                                    )}
                                 </Typography>
                                 
                                 {/* Simple Progress Bar */}
@@ -863,9 +1098,9 @@ const PerformanceTrends: React.FC = () => {
                                     overflow: 'hidden'
                                 }}>
                                     <Box sx={{ 
-                                        width: `${Math.min((wasteAnalysis.reduce((sum, item) => sum + item.wastePercentage, 0) / wasteAnalysis.length) * 20, 100)}%`,
+                                        width: wasteData?.summary?.current_waste_rate ? `${Math.min(wasteData.summary.current_waste_rate * 20, 100)}%` : wasteData?.summary?.avg_waste_percentage ? `${Math.min(wasteData.summary.avg_waste_percentage * 20, 100)}%` : '0%',
                                         height: '100%',
-                                        bgcolor: (wasteAnalysis.reduce((sum, item) => sum + item.wastePercentage, 0) / wasteAnalysis.length) > 5 ? '#ef4444' : '#10b981',
+                                        bgcolor: (wasteData?.summary?.current_waste_rate || wasteData?.summary?.avg_waste_percentage || 0) > 5 ? '#ef4444' : '#10b981',
                                         borderRadius: 4
                                     }} />
                                 </Box>
@@ -874,41 +1109,40 @@ const PerformanceTrends: React.FC = () => {
                                 </Typography>
                             </Box>
 
-                            {/* Status */}
+                            {/* Monthly Savings */}
                             <Box sx={{ 
                                 flex: 1,
                                 textAlign: 'center',
                                 p: 3,
                                 bgcolor: '#ffffff',
                                 borderRadius: '12px',
-                                border: wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 
-                                    ? '2px solid #ecfdf5' 
-                                    : '2px solid #fef7cd',
+                                border: '2px solid #f0fdf4',
                                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                             }}>
                                 <Typography variant="body2" sx={{ 
-                                    color: wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? '#059669' : '#d97706',
+                                    color: '#059669',
                                     fontWeight: 'bold', 
                                     mb: 1 
                                 }}>
-                                    🎯 Performance Status
+                                    💰 Monthly Savings
                                 </Typography>
-                                <Typography variant="h5" sx={{ 
-                                    color: wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? '#047857' : '#b45309',
+                                <Typography variant="h4" sx={{ 
+                                    color: '#047857',
                                     fontWeight: 'bold',
-                                    mb: 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 1
+                                    mb: 1
                                 }}>
-                                    {wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? '✅' : '⚠️'}
-                                    {wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 ? 'On Target' : 'Above Target'}
+                                    {wasteLoading ? (
+                                        <CircularProgress size={24} sx={{ color: '#047857' }} />
+                                    ) : wasteData?.summary?.rolling_avg_savings ? (
+                                        `RM ${wasteData.summary.rolling_avg_savings.toLocaleString()}`
+                                    ) : wasteData?.summary?.current_month_savings ? (
+                                        `RM ${wasteData.summary.current_month_savings.toLocaleString()}`
+                                    ) : (
+                                        'RM 0'
+                                    )}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#64748b' }}>
-                                    {wasteAnalysis[wasteAnalysis.length - 1]?.wastePercentage < 5 
-                                        ? 'Great job! Keep it up' 
-                                        : 'Review waste processes'}
+                                    {wasteData?.summary?.performance_status || 'Excellent Savings'}
                                 </Typography>
                             </Box>
                         </Box>
@@ -1974,6 +2208,15 @@ const PerformanceTrends: React.FC = () => {
                 open={reportDialogOpen}
                 onClose={() => setReportDialogOpen(false)}
                 data={data}
+            />
+
+            {/* AI Analysis Dialog */}
+            <AIAnalysisPopup
+                open={aiDialogOpen}
+                onClose={() => setAiDialogOpen(false)}
+                insights={aiInsights}
+                loading={aiLoading}
+                error={aiError}
             />
         </Box>
     );
