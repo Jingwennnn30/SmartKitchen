@@ -167,6 +167,24 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
         }
     };
 
+    // Helper function to detect if transcript is likely a number (for faster processing)
+    const isLikelyNumber = (text: string): boolean => {
+        const numberWords = [
+            'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+            'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
+            'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety',
+            'hundred', 'thousand'
+        ];
+        
+        const lowerText = text.toLowerCase().trim();
+        
+        // Check if it's a digit
+        if (/^\d+$/.test(lowerText)) return true;
+        
+        // Check if it's a number word
+        return numberWords.some(num => lowerText === num || lowerText.includes(num));
+    };
+
     const startCommandRecognition = () => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) return;
@@ -184,8 +202,8 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
         
         cmdRecRef.current = new SpeechRecognition();
         cmdRecRef.current.lang = "en-US";
-        cmdRecRef.current.continuous = true; // allow longer commands
-        cmdRecRef.current.interimResults = false;
+        cmdRecRef.current.continuous = false; // Changed: single utterance mode for better number recognition
+        cmdRecRef.current.interimResults = true; // Changed: get interim results for faster response
         cmdRecRef.current.maxAlternatives = 1;
 
         let commandTimeout: NodeJS.Timeout | null = null;
@@ -200,26 +218,52 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
             }
             
             let transcript = "";
+            let isFinal = false;
+            
             for (let i = ev.resultIndex; i < ev.results.length; ++i) {
                 transcript += ev.results[i][0].transcript;
+                if (ev.results[i].isFinal) {
+                    isFinal = true;
+                }
             }
             transcript = transcript.trim();
             
             console.log("[Cmd] Raw command heard:", transcript);
-            console.log("[Cmd] Is final result:", ev.results[ev.results.length - 1].isFinal);
+            console.log("[Cmd] Is final result:", isFinal);
             
-            if (transcript) {
-                log("[Cmd] recognized:", transcript);
-                console.log("[Cmd] Command recognized:", transcript);
-                setStatusInternal("sending to Lex...", "idle");
-                // Stop listening and send to backend
-                if (commandTimeout) clearTimeout(commandTimeout);
-                isInCommandModeRef.current = false; // exit command mode immediately
-                try { cmdRecRef.current.stop(); } catch(e) {}
-                // sendToBackend will handle resuming wake detection after TTS completes
-                sendToBackend(transcript);
+            // Process final results immediately, or interim results for single numbers
+            if (isFinal) {
+                if (transcript) {
+                    log("[Cmd] recognized (final):", transcript);
+                    console.log("[Cmd] Final command recognized:", transcript);
+                    setStatusInternal("sending to Lex...", "idle");
+                    // Stop listening and send to backend
+                    if (commandTimeout) clearTimeout(commandTimeout);
+                    isInCommandModeRef.current = false; // exit command mode immediately
+                    try { cmdRecRef.current.stop(); } catch(e) {}
+                    // sendToBackend will handle resuming wake detection after TTS completes
+                    sendToBackend(transcript);
+                } else {
+                    console.log("[Cmd] Empty transcript received");
+                }
+            } else if (transcript && isLikelyNumber(transcript)) {
+                // For interim number results, wait a brief moment to allow compound numbers
+                console.log("[Cmd] Interim number detected:", transcript);
+                setTimeout(() => {
+                    // Check if speech recognition is still active (user might still be talking)
+                    if (cmdRecRef.current && cmdRecRef.current.readyState !== undefined) {
+                        log("[Cmd] recognized (interim number):", transcript);
+                        console.log("[Cmd] Processing interim number:", transcript);
+                        setStatusInternal("sending to Lex...", "idle");
+                        if (commandTimeout) clearTimeout(commandTimeout);
+                        isInCommandModeRef.current = false;
+                        try { cmdRecRef.current.stop(); } catch(e) {}
+                        sendToBackend(transcript);
+                    }
+                }, 800); // Brief delay to allow compound numbers like "twenty-one"
             } else {
-                console.log("[Cmd] Empty transcript received");
+                // For interim results, just log but don't process yet
+                console.log("[Cmd] Interim result:", transcript);
             }
         };
 
