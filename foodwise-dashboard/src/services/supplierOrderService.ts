@@ -61,16 +61,25 @@ export interface UpdateOrderStatusRequest {
 
 // Mock API base URL - replace with actual endpoint
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://your-api-endpoint.com/api';
-const BACKEND_BASE_URL = "http://localhost:4000";
+
+// AWS HTTP API Gateway URL for Lambda functions
+// Replace with your actual API Gateway URL after deployment
+const LAMBDA_API_URL = "https://1yp7zce38a.execute-api.us-east-1.amazonaws.com";
 
 class SupplierOrderService {
     
-    // Fetch orders from DynamoDB order-stock table
+    // ====================================
+    // SERVERLESS LAMBDA FUNCTIONS
+    // ====================================
+    // These methods use AWS Lambda functions via HTTP API Gateway
+    // instead of the Node.js backend server
+    
+    // Fetch orders from DynamoDB order-stock table via Lambda
     async fetchOrderStockData(): Promise<SupplierOrderType[]> {
         try {
-            console.log("🔗 Fetching order stock data from DynamoDB...");
+            console.log("🔗 Fetching order stock data from Lambda API...");
             
-            const response = await fetch(`${BACKEND_BASE_URL}/api/order-stock`, {
+            const response = await fetch(`${LAMBDA_API_URL}/order-stock`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -78,55 +87,30 @@ class SupplierOrderService {
                 }
             });
             
-            console.log("📡 Order stock response status:", response.status);
+            console.log("📡 Lambda API response status:", response.status);
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch order stock data: ${response.status}`);
             }
             
             const rawData = await response.json();
-            console.log("📦 Raw order stock data:", rawData);
+            console.log("📦 Raw Lambda API data:", rawData);
             
-            // Transform raw DynamoDB data to match SupplierOrderType interface
-            const transformedData: SupplierOrderType[] = rawData.map((order: any) => {
-                console.log("🔧 Transforming order:", order);
-                
-                // Generate order number using VA + first 8 characters of order_id
-                const orderNumber = `VA${order.id.substring(0, 8)}`;
-                console.log(`📋 Generated order number: ${orderNumber} from order_id: ${order.id}`);
-                
-                // The API already returns the correct format, just use it directly
-                return {
-                    id: order.id,
-                    orderNumber: orderNumber, // Use VA + first 8 chars of order_id
-                    supplier: order.supplier, // Use backend supplier data
-                    items: order.items, // Items are already in correct format from API
-                    totalAmount: order.totalAmount,
-                    status: order.status,
-                    orderDate: order.orderDate,
-                    expectedDelivery: order.expectedDelivery,
-                    orderedBy: order.orderedBy, // Use backend value (Voice Assistant)
-                    orderMethod: order.orderMethod, // Use backend value (voice-assistant)
-                    approvedBy: order.approvedBy,
-                    approvalDate: order.approvalDate,
-                    notes: order.notes
-                };
-            });
-            
-            console.log("✅ Transformed order stock data:", transformedData);
-            return transformedData;
+            // Lambda already returns transformed data in the correct format
+            console.log("✅ Lambda order stock data received:", rawData);
+            return rawData;
             
         } catch (error) {
-            console.error("❌ Error fetching order stock data:", error);
+            console.error("❌ Error fetching order stock data from Lambda:", error);
             return [];
         }
     }
     
-    // Update order status in DynamoDB
+    // Update order status in DynamoDB via Lambda
     async updateOrderStatus(orderId: string, status: 'PENDING' | 'APPROVED' | 'REJECTED', approvedBy: string): Promise<boolean> {
         try {
             console.log(`🔄 Updating order ${orderId} status to ${status} by ${approvedBy}`);
-            console.log(`📡 API URL: ${BACKEND_BASE_URL}/api/order-stock/${orderId}/status`);
+            console.log(`📡 Lambda API URL: ${LAMBDA_API_URL}/order-stock/${orderId}/status`);
             
             const requestBody = {
                 status: status,
@@ -134,7 +118,7 @@ class SupplierOrderService {
             };
             console.log(`📦 Request body:`, requestBody);
             
-            const response = await fetch(`${BACKEND_BASE_URL}/api/order-stock/${orderId}/status`, {
+            const response = await fetch(`${LAMBDA_API_URL}/order-stock/${orderId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -143,22 +127,21 @@ class SupplierOrderService {
                 body: JSON.stringify(requestBody)
             });
             
-            console.log("📡 Update order status response status:", response.status);
-            console.log("📡 Response headers:", response.headers);
+            console.log("📡 Lambda API response status:", response.status);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`❌ API Error Response:`, errorText);
+                console.error(`❌ Lambda API Error Response:`, errorText);
                 throw new Error(`Failed to update order status: ${response.status} - ${errorText}`);
             }
             
             const result = await response.json();
-            console.log("✅ Order status updated successfully:", result);
+            console.log("✅ Order status updated successfully via Lambda:", result);
             
             return true;
             
         } catch (error) {
-            console.error("❌ Error updating order status:", error);
+            console.error("❌ Error updating order status via Lambda:", error);
             console.error("❌ Error details:", error instanceof Error ? error.message : String(error));
             return false;
         }

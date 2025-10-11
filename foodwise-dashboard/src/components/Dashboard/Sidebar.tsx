@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Typography, Divider } from '@mui/material';
+import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Typography, Divider, Badge } from '@mui/material';
 import GridViewIcon from '@mui/icons-material/GridView';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
@@ -11,6 +11,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import BusinessIcon from '@mui/icons-material/Business';
 import { styled } from '@mui/material/styles';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSupplierOrderNotifications } from '../../hooks/useSupplierOrderNotifications';
 
 const SidebarContainer = styled(Box)(({ theme }) => ({
     width: 240,
@@ -119,8 +120,12 @@ const sidebarItems = [
 const Sidebar = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { newOrderCount, markAsChecked } = useSupplierOrderNotifications();
 
     const handleItemClick = (path: string) => {
+        if (path === '/supplier-orders' && newOrderCount > 0) {
+            markAsChecked(); // Mark notifications as checked when visiting supplier orders
+        }
         navigate(path);
     };
 
@@ -177,7 +182,27 @@ const Sidebar = () => {
                                 {item.icon}
                             </StyledListItemIcon>
                             <StyledListItemText 
-                                primary={item.title}
+                                primary={
+                                    item.path === '/supplier-orders' && newOrderCount > 0 ? (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                            <span>{item.title}</span>
+                                            <Badge 
+                                                badgeContent={newOrderCount} 
+                                                color="error"
+                                                sx={{
+                                                    '& .MuiBadge-badge': {
+                                                        fontSize: '0.7rem',
+                                                        height: '16px',
+                                                        minWidth: '16px',
+                                                        borderRadius: '50%'
+                                                    }
+                                                }}
+                                            />
+                                        </Box>
+                                    ) : (
+                                        item.title
+                                    )
+                                }
                             />
                         </StyledListItemButton>
                     </ListItem>
