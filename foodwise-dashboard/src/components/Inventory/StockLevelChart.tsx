@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { FC } from 'react';
-import { Box, Link, Typography } from '@mui/material';
+import { Box, Typography, Skeleton } from '@mui/material';
 import {
     BarChart,
     Bar,
@@ -11,6 +11,7 @@ import {
     Legend,
     ResponsiveContainer
 } from 'recharts';
+import StockDataService, { StockItem } from '../../services/stockDataService';
 
 interface StockData {
     name: string;
