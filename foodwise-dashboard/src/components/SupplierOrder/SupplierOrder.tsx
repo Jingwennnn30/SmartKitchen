@@ -25,13 +25,11 @@ import {
     Tooltip,
     Card,
     CardContent,
-    Fab,
     LinearProgress,
     Avatar,
     Rating
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
@@ -1002,15 +1000,6 @@ const SupplierOrder: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Floating Action Button */}
-            <Fab
-                color="primary"
-                sx={{ position: 'fixed', bottom: 32, right: 32 }}
-                onClick={() => setViewMode('create')}
-            >
-                <AddIcon />
-            </Fab>
         </Box>
     );
 };
