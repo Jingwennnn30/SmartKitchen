@@ -50,7 +50,7 @@ const SeasoningRestockTable: React.FC = () => {
       </Box>
 
       <TableContainer component={Paper} sx={{ borderRadius: 2, '& .MuiTableCell-root': { py: 2, px: 3 } }}>
-        <Table sx={{ minWidth: 1000, tableLayout: 'fixed', '& th, & td': { whiteSpace: 'nowrap' } }}>
+        <Table sx={{ minWidth: 800, tableLayout: 'fixed', '& th, & td': { whiteSpace: 'nowrap' } }}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 600 }}>Item Name</TableCell>
