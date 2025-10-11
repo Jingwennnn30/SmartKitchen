@@ -8,6 +8,7 @@ import DinnerDiningIcon from '@mui/icons-material/DinnerDining';
 import InsightsIcon from '@mui/icons-material/Insights';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LogoutIcon from '@mui/icons-material/Logout';
+import BusinessIcon from '@mui/icons-material/Business';
 import { styled } from '@mui/material/styles';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -103,6 +104,11 @@ const sidebarItems = [
         allowedRoles: ['manager'] 
     },
     { 
+        title: 'Supplier Orders', 
+        icon: <BusinessIcon />, 
+        path: '/supplier-orders',
+        allowedRoles: ['manager'] },
+    { 
         title: 'Menu', 
         icon: <MenuBookIcon />, 
         path: '/menu', 
@@ -135,7 +141,7 @@ const Sidebar = () => {
 
     // Filter sidebar items based on user role
     const filteredSidebarItems = sidebarItems.filter(item => 
-        item.allowedRoles.includes(userRole)
+        Array.isArray(item.allowedRoles) && item.allowedRoles.includes(userRole)
     );
 
     return (
