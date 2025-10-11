@@ -467,108 +467,130 @@ const AIAnalysisPopup: React.FC<AIAnalysisPopupProps> = ({
                                     Comprehensive Analysis
                                 </Typography>
                                 
-                                {/* Format and display the analysis text in a better way */}
-                                <Box sx={{ 
-                                    backgroundColor: '#f8fafc', 
-                                    borderRadius: '12px',
-                                    border: '1px solid #e2e8f0',
-                                    overflow: 'hidden'
-                                }}>
-                                    <Box sx={{ 
-                                        p: 3,
-                                        maxHeight: '400px',
-                                        overflowY: 'auto',
-                                        '&::-webkit-scrollbar': {
-                                            width: '6px',
-                                        },
-                                        '&::-webkit-scrollbar-track': {
-                                            background: '#f1f5f9',
-                                            borderRadius: '3px'
-                                        },
-                                        '&::-webkit-scrollbar-thumb': {
-                                            background: '#cbd5e1',
-                                            borderRadius: '3px'
-                                        },
-                                        '&::-webkit-scrollbar-thumb:hover': {
-                                            background: '#94a3b8'
+                                {/* Enhanced structured analysis display */}
+                                {(() => {
+                                    const analysisText = getAIData().analysis_text || 'Analysis unavailable';
+                                    const lines = analysisText.split('\n');
+                                    
+                                    // Parse sections from the AI analysis
+                                    const sections: { [key: string]: string[] } = {};
+                                    let currentSection = 'General';
+                                    
+                                    lines.forEach((line: string) => {
+                                        const trimmed = line.trim();
+                                        if (trimmed.includes('EXECUTIVE SUMMARY') || trimmed.includes('Executive Summary')) {
+                                            currentSection = 'Executive Summary';
+                                            sections[currentSection] = [];
+                                        } else if (trimmed.includes('PERFORMANCE STATUS') || trimmed.includes('Performance Status')) {
+                                            currentSection = 'Performance Status';
+                                            sections[currentSection] = [];
+                                        } else if (trimmed.includes('KEY OPPORTUNITIES') || trimmed.includes('Key Opportunities')) {
+                                            currentSection = 'Key Opportunities';
+                                            sections[currentSection] = [];
+                                        } else if (trimmed.includes('IMMEDIATE ACTIONS') || trimmed.includes('Immediate Actions')) {
+                                            currentSection = 'Immediate Actions';
+                                            sections[currentSection] = [];
+                                        } else if (trimmed.includes('3D FEATURE IMPACT') || trimmed.includes('Feature Impact')) {
+                                            currentSection = '3D Feature Impact';
+                                            sections[currentSection] = [];
+                                        } else if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+                                            if (!sections[currentSection]) sections[currentSection] = [];
+                                            sections[currentSection].push(trimmed.replace(/^[•-]\s*/, ''));
+                                        } else if (trimmed && !trimmed.startsWith('**')) {
+                                            if (!sections[currentSection]) sections[currentSection] = [];
+                                            sections[currentSection].push(trimmed);
                                         }
-                                    }}>
-                                        {(getAIData().analysis_text || 'Analysis unavailable').split('\n').map((line: string, index: number) => {
-                                            if (line.startsWith('###')) {
-                                                return (
-                                                    <Typography key={index} variant="h6" sx={{ 
-                                                        color: '#1f2937', 
-                                                        fontWeight: 'bold',
-                                                        mt: index > 0 ? 3 : 0,
-                                                        mb: 2,
-                                                        borderBottom: '2px solid #e2e8f0',
-                                                        pb: 1
-                                                    }}>
-                                                        {line.replace('###', '').trim()}
-                                                    </Typography>
-                                                );
-                                            } else if (line.startsWith('####')) {
-                                                return (
-                                                    <Typography key={index} variant="subtitle1" sx={{ 
-                                                        color: '#374151', 
-                                                        fontWeight: 'bold',
-                                                        mt: 2,
-                                                        mb: 1
-                                                    }}>
-                                                        {line.replace('####', '').trim()}
-                                                    </Typography>
-                                                );
-                                            } else if (line.startsWith('-')) {
-                                                return (
-                                                    <Typography key={index} variant="body2" sx={{ 
-                                                        color: '#4b5563',
-                                                        ml: 2,
-                                                        mb: 0.5,
-                                                        display: 'flex',
-                                                        alignItems: 'flex-start',
-                                                        gap: 1
-                                                    }}>
-                                                        <Box sx={{
-                                                            width: 4,
-                                                            height: 4,
-                                                            borderRadius: '50%',
-                                                            backgroundColor: '#8b5cf6',
-                                                            mt: 1,
-                                                            flexShrink: 0
-                                                        }} />
-                                                        {line.replace('-', '').trim()}
-                                                    </Typography>
-                                                );
-                                            } else if (line.match(/^\d+\./)) {
-                                                return (
-                                                    <Typography key={index} variant="body2" sx={{ 
-                                                        color: '#4b5563',
-                                                        mb: 1,
-                                                        lineHeight: 1.6
-                                                    }}>
-                                                        <strong style={{ color: '#1f2937' }}>{line.split(':')[0]}:</strong>
-                                                        {line.includes(':') ? line.split(':').slice(1).join(':') : ''}
-                                                    </Typography>
-                                                );
-                                            } else if (line.trim() === '---') {
-                                                return (
-                                                    <Divider key={index} sx={{ my: 2 }} />
-                                                );
-                                            } else if (line.trim() && !line.startsWith('**')) {
-                                                return (
-                                                    <Typography key={index} variant="body2" sx={{ 
-                                                        color: '#4b5563',
-                                                        mb: 1,
-                                                        lineHeight: 1.6
-                                                    }}>
-                                                        {line.trim()}
-                                                    </Typography>
-                                                );
-                                            }
-                                            return null;
-                                        })}
-                                    </Box>
-                                </Box>
+                                    });
+
+                                    const getSectionIcon = (sectionName: string) => {
+                                        switch (sectionName) {
+                                            case 'Executive Summary': return '📊';
+                                            case 'Performance Status': return '🎯';
+                                            case 'Key Opportunities': return '💡';
+                                            case 'Immediate Actions': return '⚡';
+                                            case '3D Feature Impact': return '🚀';
+                                            default: return '📈';
+                                        }
+                                    };
+
+                                    const getSectionColor = (sectionName: string) => {
+                                        switch (sectionName) {
+                                            case 'Executive Summary': return '#3b82f6';
+                                            case 'Performance Status': return '#10b981';
+                                            case 'Key Opportunities': return '#f59e0b';
+                                            case 'Immediate Actions': return '#ef4444';
+                                            case '3D Feature Impact': return '#8b5cf6';
+                                            default: return '#6b7280';
+                                        }
+                                    };
+
+                                    return (
+                                        <Box sx={{ maxHeight: '500px', overflowY: 'auto' }}>
+                                            {Object.entries(sections).map(([sectionName, items], sectionIndex) => (
+                                                <Card key={sectionIndex} sx={{ 
+                                                    mb: 2, 
+                                                    border: `2px solid ${getSectionColor(sectionName)}20`,
+                                                    borderRadius: '12px',
+                                                    backgroundColor: `${getSectionColor(sectionName)}08`
+                                                }}>
+                                                    <CardContent sx={{ p: 2.5 }}>
+                                                        <Typography variant="h6" sx={{ 
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 1,
+                                                            mb: 2,
+                                                            color: getSectionColor(sectionName),
+                                                            fontWeight: '700',
+                                                            fontSize: '1.1rem'
+                                                        }}>
+                                                            <span style={{ fontSize: '1.3rem' }}>{getSectionIcon(sectionName)}</span>
+                                                            {sectionName}
+                                                        </Typography>
+                                                        
+                                                        <List sx={{ p: 0 }}>
+                                                            {items.map((item, itemIndex) => (
+                                                                <ListItem key={itemIndex} sx={{ 
+                                                                    py: 0.5, 
+                                                                    px: 0,
+                                                                    alignItems: 'flex-start'
+                                                                }}>
+                                                                    <ListItemIcon sx={{ minWidth: '24px', mt: 0.5 }}>
+                                                                        <Box sx={{
+                                                                            width: 6,
+                                                                            height: 6,
+                                                                            borderRadius: '50%',
+                                                                            backgroundColor: getSectionColor(sectionName),
+                                                                        }} />
+                                                                    </ListItemIcon>
+                                                                    <ListItemText 
+                                                                        primary={
+                                                                            <Typography variant="body2" sx={{ 
+                                                                                color: '#374151',
+                                                                                lineHeight: 1.6,
+                                                                                fontWeight: '500',
+                                                                                '& strong': {
+                                                                                    color: getSectionColor(sectionName),
+                                                                                    fontWeight: '700'
+                                                                                }
+                                                                            }}>
+                                                                                {item.includes(':') ? (
+                                                                                    <>
+                                                                                        <strong>{item.split(':')[0]}:</strong>
+                                                                                        {item.split(':').slice(1).join(':')}
+                                                                                    </>
+                                                                                ) : item}
+                                                                            </Typography>
+                                                                        }
+                                                                    />
+                                                                </ListItem>
+                                                            ))}
+                                                        </List>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </Box>
+                                    );
+                                })()}
 
                                 {/* Data Quality Score */}
                                 {getAIData().data_quality_score && (

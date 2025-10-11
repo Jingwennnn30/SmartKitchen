@@ -31,17 +31,16 @@ def lambda_handler(event, context):
     """
     
     try:
-        # Parse query parameters
+        # Parse query parameters (but ignore them for consistent July-October analysis)
         query_params = event.get('queryStringParameters') or {}
         
-        # Calculate default date range (last 3 months: Aug-Oct)
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=90)  # 3 months (Aug-Oct)
+        # Fixed date range for consistent Cost & Waste Analysis: July 1 to October 31, 2025
+        # This ensures the analysis doesn't change when users select different dates in the calendar
+        start_date = datetime(2025, 7, 1)   # July 1, 2025
+        end_date = datetime(2025, 10, 31)   # October 31, 2025
         
-        if query_params.get('start_date'):
-            start_date = datetime.strptime(query_params['start_date'], '%Y-%m-%d')
-        if query_params.get('end_date'):
-            end_date = datetime.strptime(query_params['end_date'], '%Y-%m-%d')
+        # Note: Ignoring frontend date parameters to maintain consistent waste analysis
+        # The Cost & Waste Analysis should always show July-October data regardless of calendar selection
             
         logger.info(f"Fetching waste data from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
         
@@ -207,12 +206,11 @@ def calculate_waste_management_savings(current_month_key: str, all_month_keys: L
     
     Returns both the actual waste percentage (with features) and the savings achieved.
     
-    The savings story:
+    The savings story (July-October timeline):
     - Baseline: 8.5% waste rate (industry standard without smart features)
-    - Month 1-2: No features yet, still at baseline waste
-    - Month 3-4: Dynamic menu reduces waste by 25-30%
-    - Month 5-6: Discount system adds another 20-25% reduction
-    - Month 7+: Donation program adds final 15-20% reduction
+    - July-Aug: No features yet, still at baseline waste
+    - Sep: Dynamic menu reduces waste by 2.0%
+    - Oct: All features active (Dynamic Menu + Discount + Donation = 5.8% total reduction)
     """
     
     try:
@@ -222,23 +220,18 @@ def calculate_waste_management_savings(current_month_key: str, all_month_keys: L
         # Find the position of current month in the chronological order
         month_position = all_month_keys.index(current_month_key)
         
-        # Define feature introduction timeline and their impact
-        if month_position <= 1:  # Month 1-2: No features implemented yet
-            actual_waste_rate = baseline_waste_rate  # Still at baseline
+        # Define feature introduction timeline and their impact (July-October)
+        if month_position <= 1:  # July-Aug: No features implemented yet
+            actual_waste_rate = baseline_waste_rate  # Still at baseline (8.5%)
             feature_reduction = 0
             active_features = []
             
-        elif month_position <= 3:  # Month 3-4: Dynamic menu implemented
+        elif month_position == 2:  # Sep: Dynamic menu implemented
             feature_reduction = 2.0  # Dynamic menu saves 2.0% waste
-            actual_waste_rate = baseline_waste_rate - feature_reduction
+            actual_waste_rate = baseline_waste_rate - feature_reduction  # 6.5%
             active_features = ["Dynamic Menu"]
             
-        elif month_position <= 5:  # Month 5-6: Discount system added
-            feature_reduction = 3.5  # Dynamic menu (2.0%) + Discount system (1.5%)
-            actual_waste_rate = baseline_waste_rate - feature_reduction
-            active_features = ["Dynamic Menu", "Discount System"]
-            
-        else:  # Month 7+: All features including donation program
+        else:  # Oct: All features including discount and donation
             feature_reduction = 5.8  # All features: Dynamic menu (2.0%) + Discount (1.5%) + Donation (2.3%)
             actual_waste_rate = baseline_waste_rate - feature_reduction  # 8.5 - 5.8 = 2.7%
             active_features = ["Dynamic Menu", "Discount System", "Donation Program"]
@@ -360,26 +353,24 @@ def process_waste_analysis(items: List[Dict], start_date: datetime, end_date: da
         for month_key in sorted(monthly_data.keys()):
             month_data = monthly_data[month_key]
             
-            # Calculate waste percentage
+            # Calculate waste percentage from real data first
             waste_percentage = 0
             if month_data['total_stock_value'] > 0:
                 waste_percentage = (month_data['waste_amount'] / month_data['total_stock_value']) * 100
             
-            # Calculate waste management savings (baseline vs actual with features)
-            if waste_percentage == 0 and month_data['items_processed'] > 0:
-                # Use savings calculation instead of just waste percentage
-                savings_data = calculate_waste_management_savings(month_key, sorted(monthly_data.keys()), month_data['total_stock_value'])
+            # Always calculate savings data for comparison and insights
+            savings_data = calculate_waste_management_savings(month_key, sorted(monthly_data.keys()), month_data['total_stock_value'])
+            month_data['savings_data'] = savings_data
+            
+            # Use real waste data if available, otherwise use savings simulation
+            if waste_percentage > 0:
+                # Use real waste data from DynamoDB
+                logger.info(f"Using real waste data for {month_key}: {waste_percentage:.1f}%")
+            else:
+                # Use savings simulation when no real waste data available
                 waste_percentage = savings_data['actual_waste_rate']
                 month_data['waste_amount'] = savings_data['actual_waste_amount']
-                
-                # Add savings information to the month data
-                month_data['savings_data'] = savings_data
-            else:
-                # For months with actual waste data, still calculate potential savings
-                if month_data['items_processed'] > 0:
-                    savings_data = calculate_waste_management_savings(month_key, sorted(monthly_data.keys()), month_data['total_stock_value'])
-                    # Keep actual waste but show what savings could be
-                    month_data['savings_data'] = savings_data
+                logger.info(f"Using savings simulation for {month_key}: {waste_percentage:.1f}%")
             
             waste_analysis.append({
                 'month': month_data['month'],
