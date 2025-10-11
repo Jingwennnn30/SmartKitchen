@@ -84,21 +84,9 @@ const InventoryPage = () => {
                     mb: 2 
                 }}>
                     <Typography variant="h6">Stock Levels</Typography>
-                    <FormControl size="small" sx={{ width: { xs: '100%', sm: 150 }, maxWidth: 150 }}>
-                        <InputLabel>Category</InputLabel>
-                        <Select
-                            value={selectedCategory}
-                            label="Category"
-                            onChange={handleCategoryChange}
-                        >
-                            {categories.map((category) => (
-                                <MenuItem key={category} value={category}>{category}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
                 </Box>
                 <Box sx={{ height: 300, width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
-                    <StockLevelChart category={selectedCategory} />
+                    <StockLevelChart />
                 </Box>
                 <Typography variant="caption" color="text.secondary">
                     (Current stock vs safe minimum)
