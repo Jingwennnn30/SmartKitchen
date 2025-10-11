@@ -14,7 +14,7 @@ const OrderVoiceAssistant: React.FC<OrderVoiceAssistantProps> = ({ isActive }) =
     const isInCommandModeRef = useRef(false);
     const sessionIdRef = useRef<string>("");
 
-    const API_ENDPOINT = "https://1f8dniswv6.execute-api.us-east-1.amazonaws.com/dev/lex";
+    const API_ENDPOINT = "https://ig70s4dg02.execute-api.us-east-1.amazonaws.com/dev/voice-assist";
 
     // Initialize session ID
     useEffect(() => {

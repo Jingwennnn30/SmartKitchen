@@ -1,11 +1,13 @@
 import React from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Typography } from '@mui/material';
+import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Typography, Divider } from '@mui/material';
 import GridViewIcon from '@mui/icons-material/GridView';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import WarningIcon from '@mui/icons-material/Warning';
 import DinnerDiningIcon from '@mui/icons-material/DinnerDining';
 import InsightsIcon from '@mui/icons-material/Insights';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { styled } from '@mui/material/styles';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -62,13 +64,50 @@ const StyledListItemText = styled(ListItemText)({
     }
 });
 
+// Define sidebar items with role permissions
 const sidebarItems = [
-    { title: 'Dashboard', icon: <GridViewIcon />, path: '/' },
-    { title: 'Inventory', icon: <LocalShippingIcon />, path: '/inventory' },
-    { title: 'Order Management', icon: <RestaurantIcon />, path: '/order-management' },
-    { title: 'Near Expired Items', icon: <WarningIcon />, path: '/near-expired-items' },
-    { title: 'Pre-dining Preparation', icon: <DinnerDiningIcon />, path: '/pre-dining' },
-    { title: 'Performance & Trends', icon: <InsightsIcon />, path: '/performance' },
+    { 
+        title: 'Dashboard', 
+        icon: <GridViewIcon />, 
+        path: '/', 
+        allowedRoles: ['manager'] 
+    },
+    { 
+        title: 'Inventory', 
+        icon: <LocalShippingIcon />, 
+        path: '/inventory', 
+        allowedRoles: ['manager'] 
+    },
+    { 
+        title: 'Order Management', 
+        icon: <RestaurantIcon />, 
+        path: '/order-management', 
+        allowedRoles: ['manager', 'chef'] 
+    },
+    { 
+        title: 'Near Expired Items', 
+        icon: <WarningIcon />, 
+        path: '/near-expired-items', 
+        allowedRoles: ['manager'] 
+    },
+    { 
+        title: 'Pre-dining Preparation', 
+        icon: <DinnerDiningIcon />, 
+        path: '/pre-dining', 
+        allowedRoles: ['manager', 'chef'] 
+    },
+    { 
+        title: 'Performance & Trends', 
+        icon: <InsightsIcon />, 
+        path: '/performance', 
+        allowedRoles: ['manager'] 
+    },
+    { 
+        title: 'Menu', 
+        icon: <MenuBookIcon />, 
+        path: '/menu', 
+        allowedRoles: ['customer'] 
+    },
 ];
 
 const Sidebar = () => {
@@ -79,6 +118,26 @@ const Sidebar = () => {
         navigate(path);
     };
 
+    const handleLogout = () => {
+        // Clear all authentication data
+        localStorage.removeItem('idToken');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+        
+        // Redirect to login page
+        navigate('/login');
+    };
+
+    // Get current user role from localStorage
+    const userRole = localStorage.getItem('userRole') || 'customer';
+
+    // Filter sidebar items based on user role
+    const filteredSidebarItems = sidebarItems.filter(item => 
+        item.allowedRoles.includes(userRole)
+    );
+
     return (
         <SidebarContainer>
             <LogoContainer>
@@ -86,9 +145,9 @@ const Sidebar = () => {
                     FoodWise
                 </Typography>
             </LogoContainer>
-            <Box sx={{ mt: 2 }}>
+            <Box sx={{ mt: 2, height: 'calc(100vh - 64px - 80px)', overflowY: 'auto' }}>
                 <List>
-                {sidebarItems.map((item, index) => (
+                {filteredSidebarItems.map((item, index) => (
                     <ListItem key={index} disablePadding>
                         <StyledListItemButton
                             selected={location.pathname === item.path}
@@ -117,6 +176,36 @@ const Sidebar = () => {
                         </StyledListItemButton>
                     </ListItem>
                 ))}
+                </List>
+            </Box>
+            <Box sx={{ position: 'absolute', bottom: 0, width: '100%', pb: 2 }}>
+                <Divider sx={{ mb: 1 }} />
+                <List>
+                    <ListItem disablePadding>
+                        <StyledListItemButton
+                            onClick={handleLogout}
+                            sx={{
+                                borderRadius: '8px',
+                                mx: 1,
+                                '&:hover': {
+                                    backgroundColor: '#FFE7E7',
+                                },
+                            }}
+                        >
+                            <StyledListItemIcon>
+                                <LogoutIcon sx={{ color: '#D32F2F' }} />
+                            </StyledListItemIcon>
+                            <StyledListItemText 
+                                primary="Logout"
+                                sx={{
+                                    '& .MuiTypography-root': {
+                                        color: '#D32F2F',
+                                        fontWeight: 600,
+                                    }
+                                }}
+                            />
+                        </StyledListItemButton>
+                    </ListItem>
                 </List>
             </Box>
         </SidebarContainer>
