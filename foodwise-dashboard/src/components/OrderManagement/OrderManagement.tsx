@@ -15,6 +15,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import OrderVoiceAssistant from './OrderVoiceAssistant';
 import { fetchOrderQueue, OrderQueueItem, completeOrderDish } from '../../services/orderQueueService';
+import OrderAggregationSection from './OrderAggregationSection';
 
 // ----- Styled Components -----
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -215,7 +216,7 @@ const OrderManagement: React.FC = () => {
                                                         key={i}
                                                         sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
                                                     >
-                                                        <Typography variant="body2">{item.dish_name}</Typography>
+                                                        <Typography variant="body2">{item.dish_name} × {item.quantity}</Typography>
                                                         <Chip
                                                             label={status}
                                                             size="small"
@@ -280,6 +281,9 @@ const OrderManagement: React.FC = () => {
                     )}
                 </StyledPaper>
             </Box>
+
+            {/* Order Aggregation Section */}
+            <OrderAggregationSection loading={loading} now={Date.now()} />
 
             {/* Kitchen Load Section */}
             <Box sx={{ mb: 3 }}>
