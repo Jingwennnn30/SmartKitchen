@@ -13,6 +13,7 @@ import {
     MenuItem,
     FormControl,
     InputLabel,
+    TextField,
     Chip,
     Table,
     TableBody,
@@ -37,6 +38,7 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import AgricultureIcon from '@mui/icons-material/Agriculture';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import GrainIcon from '@mui/icons-material/Grain';
+import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -44,6 +46,7 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import { supplierOrderService } from '../../services/supplierOrderService';
+import { orderCreationService } from '../../services/orderCreationService';
 
 // Types
 interface Supplier {
@@ -162,6 +165,20 @@ const mockSuppliers: Supplier[] = [
         deliveryTime: '12 hours',
         minOrder: 50,
         paymentTerms: 'Net 15'
+    },
+    {
+        id: '6',
+        name: 'Tropical Fruits Ltd',
+        category: 'Fruits',
+        contact: {
+            phone: '+1-555-0106',
+            email: 'orders@tropicalfruits.com',
+            address: '789 Orchard Lane, Fruit Valley'
+        },
+        rating: 4.7,
+        deliveryTime: '18 hours',
+        minOrder: 40,
+        paymentTerms: 'Net 10'
     },
     {
         id: '3',
@@ -284,6 +301,7 @@ const mockOrders: SupplierOrderType[] = [
 const categories = [
     { name: 'Meat', icon: <RestaurantIcon />, color: '#d32f2f' },
     { name: 'Vegetables', icon: <AgricultureIcon />, color: '#388e3c' },
+    { name: 'Fruits', icon: <LocalFloristIcon />, color: '#ff6f00' },
     { name: 'Dairy', icon: <LocalCafeIcon />, color: '#1976d2' },
     { name: 'Dry Goods', icon: <GrainIcon />, color: '#f57c00' },
     { name: 'Beverages', icon: <LocalShippingIcon />, color: '#7b1fa2' }
@@ -299,6 +317,14 @@ const SupplierOrder: React.FC = () => {
     const [currentUser] = useState('Chef Manager'); // In real app, get from auth context
     const [viewMode, setViewMode] = useState<'overview' | 'create' | 'history'>('overview');
     const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+    
+    // Order form state
+    const [orderFormData, setOrderFormData] = useState({
+        itemName: '',
+        quantity: '',
+        unit: 'kg'
+    });
+    const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
     // Load AWS DynamoDB orders on component mount and set up auto-refresh
     useEffect(() => {
@@ -436,6 +462,70 @@ const SupplierOrder: React.FC = () => {
         }
     };
 
+    // Handle manual order submission via API Gateway
+    const handleSubmitOrder = async () => {
+        if (!orderFormData.itemName.trim() || !orderFormData.quantity.trim()) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
+        const quantity = parseInt(orderFormData.quantity);
+        if (isNaN(quantity) || quantity <= 0) {
+            alert('Please enter a valid quantity.');
+            return;
+        }
+
+        setIsSubmittingOrder(true);
+        
+        try {
+            console.log(`📋 Manager creating order: ${quantity} ${orderFormData.unit} of ${orderFormData.itemName}`);
+            
+            // Call AWS Lambda via HTTP API Gateway - Manager orders are pre-approved
+            const result = await orderCreationService.createManagerOrder(
+                orderFormData.itemName,
+                quantity,
+                orderFormData.unit
+            );
+            
+            if (result) {
+                console.log('✅ Order created successfully:', result);
+                alert(`Order created successfully! Order ID: ${result.order_id}\n\nAn email notification has been sent.`);
+                
+                // Reset form
+                setOrderFormData({
+                    itemName: '',
+                    quantity: '',
+                    unit: 'kg'
+                });
+                
+                // Close dialog
+                handleCloseDialog();
+                
+                // Refresh orders after a short delay to show the new order
+                setTimeout(async () => {
+                    try {
+                        const orderStockData = await supplierOrderService.fetchOrderStockData();
+                        if (orderStockData && orderStockData.length > 0) {
+                            const combinedOrders = [...orderStockData, ...mockOrders];
+                            setOrders(combinedOrders);
+                        }
+                    } catch (error) {
+                        console.error("Error refreshing orders after creation:", error);
+                    }
+                }, 2000); // Wait 2 seconds for AWS to process
+                
+            } else {
+                alert('Failed to create order. Please try again.');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error creating order:', error);
+            alert('Error creating order. Please try again.');
+        } finally {
+            setIsSubmittingOrder(false);
+        }
+    };
+
     const getCategoryIcon = (category: string) => {
         const cat = categories.find(c => c.name === category);
         return cat ? cat.icon : <RestaurantIcon />;
@@ -463,6 +553,12 @@ const SupplierOrder: React.FC = () => {
         setSelectedCategory('');
         setSelectedSupplier(null);
         setOrderItems([]);
+        // Reset order form
+        setOrderFormData({
+            itemName: '',
+            quantity: '',
+            unit: 'kg'
+        });
     };
 
     const getOrderStatusCounts = () => {
@@ -573,7 +669,7 @@ const SupplierOrder: React.FC = () => {
                         </Typography>
                         <Grid container spacing={3}>
                             {categories.map((category) => (
-                                <Grid item xs={12} sm={6} md={2.4} key={category.name}>
+                                <Grid item xs={6} sm={4} md={2} key={category.name}>
                                     <CategoryCard onClick={() => handleCategorySelect(category.name)}>
                                         <CardContent sx={{ textAlign: 'center', py: 3 }}>
                                             <Avatar
@@ -814,7 +910,7 @@ const SupplierOrder: React.FC = () => {
             <Dialog
                 open={openOrderDialog}
                 onClose={handleCloseDialog}
-                maxWidth="md"
+                maxWidth="sm"
                 fullWidth
             >
                 <DialogTitle>
@@ -822,81 +918,87 @@ const SupplierOrder: React.FC = () => {
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <FormControl fullWidth sx={{ mb: 3 }}>
-                            <InputLabel>Select Supplier</InputLabel>
-                            <Select
-                                value={selectedSupplier?.id || ''}
-                                onChange={(e) => {
-                                    const supplier = suppliers.find(s => s.id === e.target.value);
-                                    setSelectedSupplier(supplier || null);
-                                }}
-                            >
-                                {suppliers
-                                    .filter(s => s.category === selectedCategory)
-                                    .map((supplier) => (
-                                        <MenuItem key={supplier.id} value={supplier.id}>
-                                            <Box>
-                                                <Typography variant="body1">{supplier.name}</Typography>
-                                                <Typography variant="caption" color="textSecondary">
-                                                    Rating: {supplier.rating}/5 | Delivery: {supplier.deliveryTime}
-                                                </Typography>
-                                            </Box>
-                                        </MenuItem>
-                                    ))}
-                            </Select>
-                        </FormControl>
-
-                        {selectedSupplier && (
-                            <Paper sx={{ p: 2, mb: 3, bgcolor: '#f8f9fa' }}>
-                                <Typography variant="h6" gutterBottom>
-                                    Supplier Details
-                                </Typography>
-                                <Grid container spacing={2}>
-                                    <Grid item xs={12} sm={6}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                            <PhoneIcon fontSize="small" />
-                                            <Typography variant="body2">{selectedSupplier.contact.phone}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                            <EmailIcon fontSize="small" />
-                                            <Typography variant="body2">{selectedSupplier.contact.email}</Typography>
-                                        </Box>
-                                        <Rating value={selectedSupplier.rating} readOnly size="small" />
-                                    </Grid>
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography variant="body2">
-                                            <strong>Delivery Time:</strong> {selectedSupplier.deliveryTime}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Min Order:</strong> RM {selectedSupplier.minOrder}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Payment Terms:</strong> {selectedSupplier.paymentTerms}
-                                        </Typography>
-                                    </Grid>
-                                </Grid>
-                            </Paper>
-                        )}
-
-                        <Typography variant="h6" gutterBottom>
-                            Order Items
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                            Fill in the details below to create a new order. The system will automatically find the appropriate supplier and send notifications.
                         </Typography>
-                        {/* Add order items interface here */}
-                        <Typography variant="body2" color="textSecondary">
-                            Order items interface will be implemented here...
+                        
+                        <TextField
+                            fullWidth
+                            label="Item Name"
+                            value={orderFormData.itemName}
+                            onChange={(e) => setOrderFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                            placeholder="e.g., Papaya, Chicken Breast, Milk"
+                            sx={{ mb: 3 }}
+                            required
+                        />
+                        
+                        <Grid container spacing={2} sx={{ mb: 3 }}>
+                            <Grid item xs={8}>
+                                <TextField
+                                    fullWidth
+                                    label="Quantity"
+                                    type="number"
+                                    value={orderFormData.quantity}
+                                    onChange={(e) => setOrderFormData(prev => ({ ...prev, quantity: e.target.value }))}
+                                    placeholder="e.g., 10"
+                                    required
+                                    inputProps={{ min: 1 }}
+                                />
+                            </Grid>
+                            <Grid item xs={4}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Unit</InputLabel>
+                                    <Select
+                                        value={orderFormData.unit}
+                                        onChange={(e) => setOrderFormData(prev => ({ ...prev, unit: e.target.value }))}
+                                        label="Unit"
+                                    >
+                                        <MenuItem value="kg">kg</MenuItem>
+                                        <MenuItem value="liters">liters</MenuItem>
+                                        <MenuItem value="pieces">pieces</MenuItem>
+                                        <MenuItem value="boxes">boxes</MenuItem>
+                                        <MenuItem value="packs">packs</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
+                        
+                        <Paper sx={{ p: 2, bgcolor: '#f8f9fa' }}>
+                            <Typography variant="h6" gutterBottom>
+                                📋 Order Summary
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>Category:</strong> {selectedCategory}
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>Item:</strong> {orderFormData.itemName || 'Not specified'}
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>Quantity:</strong> {orderFormData.quantity || '0'} {orderFormData.unit}
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>Ordered by:</strong> {currentUser}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'green' }}>
+                                <strong>Status:</strong> Approved (Manager Authority)
+                            </Typography>
+                        </Paper>
+                        
+                        <Typography variant="caption" color="textSecondary" sx={{ mt: 2, display: 'block' }}>
+                            💡 After submission, the order will be created in the system and an email notification will be sent to relevant staff.
                         </Typography>
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog}>
+                    <Button onClick={handleCloseDialog} disabled={isSubmittingOrder}>
                         Cancel
                     </Button>
                     <Button
-                        onClick={handleCreateOrder}
+                        onClick={handleSubmitOrder}
                         variant="contained"
-                        disabled={!selectedSupplier}
+                        disabled={isSubmittingOrder || !orderFormData.itemName.trim() || !orderFormData.quantity.trim()}
                     >
-                        Create Order
+                        {isSubmittingOrder ? 'Creating Order...' : 'Create Order'}
                     </Button>
                 </DialogActions>
             </Dialog>
