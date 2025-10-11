@@ -2,7 +2,7 @@ const MENU_API_URL = 'https://k53br9824i.execute-api.us-east-1.amazonaws.com/dev
 const SAVE_ORDER_API_URL = 'https://2buh9e5j4d.execute-api.us-east-1.amazonaws.com/dev/order_insert';
 
 export interface MenuItem {
-    dish_name: string;
+    dishName: string;
     price: number;
     category: string;
 }
@@ -15,7 +15,7 @@ export interface MenuResponse {
 }
 
 export interface OrderItem {
-    dish_name: string;
+    dishName: string;
     quantity: number;
     price: number;
 }

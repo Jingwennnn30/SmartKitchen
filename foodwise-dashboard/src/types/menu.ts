@@ -10,6 +10,7 @@ export interface CartItem extends MenuItem {
 
 export interface Order {
     orderId?: string;
+    dishName: string;
     items: CartItem[];
     totalPrice: number;
     createdAt?: string;

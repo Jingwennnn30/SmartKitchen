@@ -43,7 +43,7 @@ const MenuPage: React.FC = () => {
             const fetchedItems = await MenuService.getAllMenuItems();
             // Transform to match your MenuItem interface
             const items: MenuItem[] = fetchedItems.map((item: any) => ({
-                dishName: item.dish_name,
+               dishName: item.dishName,
                 price: item.price,
                 category: item.category || 'Other' // Provide default category
             }));
@@ -78,15 +78,15 @@ const MenuPage: React.FC = () => {
     // Remove item from cart
     const removeFromCart = (dishName: string) => {
         setCart(prevCart => {
-            const existingItem = prevCart.find(item => item.dishName === dishName);
+            const existingItem = prevCart.find(item => item.dishName ===dishName);
             if (existingItem && existingItem.quantity > 1) {
                 return prevCart.map(item =>
-                    item.dishName === dishName
+                    item.dishName ===dishName
                         ? { ...item, quantity: item.quantity - 1 }
                         : item
                 );
             }
-            return prevCart.filter(item => item.dishName !== dishName);
+            return prevCart.filter(item => item.dishName !==dishName);
         });
     };
 
@@ -112,11 +112,11 @@ const MenuPage: React.FC = () => {
             setError(null);
             
             // Format order data according to the API requirements
-            const customerOrder = {
+            const customerOrder = { 
                 customerName: customerName.trim(),
                 tableNumber: tableNumber.trim(),
                 items: cart.map(item => ({
-                    dish_name: item.dishName || '',
+                    dishName: item.dishName || '',
                     quantity: item.quantity,
                     price: item.price
                 })),
@@ -141,7 +141,7 @@ const MenuPage: React.FC = () => {
             setSpecialRequests('');
             
             // Show success message
-            alert(`Order placed successfully! Order ID: ${response.orderId || 'N/A'}`);
+            alert(`Order placed successfully! Thank you for your order.`);
             
         } catch (error: any) {
             console.error('Error placing order:', error);
