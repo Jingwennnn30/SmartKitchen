@@ -17,8 +17,10 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
+import StockDataService from '../../services/stockDataService';
 
-interface StockItem {
+// Local interface for InventoryTable display format
+interface InventoryStockItem {
   id: string;
   item: string;
   quantity: string;
@@ -27,6 +29,9 @@ interface StockItem {
   status: 'Good' | 'Running Soon' | 'Expired';
   location: string;
 }
+
+// Remove duplicate interface since we're importing it from service
+// interface StockItem { ... } - now imported from stockDataService
 
 interface InventoryTableProps {
   searchQuery?: string;
@@ -86,7 +91,7 @@ const getStatusColor = (status: string) => {
 };
 
 const InventoryTable: React.FC<InventoryTableProps> = ({ searchQuery = '' }) => {
-  const [stockData, setStockData] = useState<StockItem[]>([]);
+  const [stockData, setStockData] = useState<InventoryStockItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string>('All');
@@ -96,33 +101,25 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ searchQuery = '' }) => 
   const activeSearchQuery = searchQuery || internalSearchQuery;
 
   const fetchStockData = async () => {
+    setLoading(true);
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-      const response = await fetch(`${backendUrl}/api/stock`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      console.log('🔄 Fetching stock data from Lambda...');
+      const data = await StockDataService.getInventoryTableData();
       
-      // Ensure data is an array
-      if (Array.isArray(data)) {
+      if (data && data.length > 0) {
+        console.log('✅ Stock data loaded:', data.length, 'items');
         setStockData(data);
-      } else if (data && Array.isArray(data.data)) {
-        // Handle case where response is wrapped in an object
-        setStockData(data.data);
-      } else if (data && Array.isArray(data.items)) {
-        // Handle another possible structure
-        setStockData(data.items);
+        setError(null);
       } else {
-        console.error('Unexpected data format:', data);
+        console.warn('⚠️ No stock data received');
         setStockData([]);
-        setError('Received unexpected data format from server');
+        setError('No stock data available');
       }
-      setLoading(false);
     } catch (error) {
-      console.error('Error fetching stock data:', error);
-      setStockData([]); // Ensure stockData is always an array
-      setError('Failed to fetch stock data. Please ensure the backend server is running.');
+      console.error('❌ Error fetching stock data from Lambda:', error);
+      setStockData([]);
+      setError('Failed to fetch stock data from AWS Lambda. Please check your connection.');
+    } finally {
       setLoading(false);
     }
   };
@@ -160,7 +157,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ searchQuery = '' }) => 
     return (
       <Box sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
         <CircularProgress />
-        <Typography>Loading stock data from AWS DynamoDB...</Typography>
+        <Typography>Loading stock data ...</Typography>
       </Box>
     );
   }
