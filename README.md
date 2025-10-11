@@ -3,9 +3,9 @@
 A comprehensive AWS serverless solution for intelligent restaurant inventory management, food waste reduction, and operational optimization.
 
 **Reference Link:**
-Deployment : https://main.d7pk79y2e1xma.amplifyapp.com/
+Deployment : https://main.d20y271iadqee6.amplifyapp.com/login
 
-Presentation Slide : 
+Presentation Slide : https://drive.google.com/drive/folders/1nNjIpyqkylrg8zR9INLGTtIAYlrThiOG
 
 
 ### **AWS Services Used**
@@ -154,7 +154,7 @@ SmartKitchen/
 - **React 18.2.0** - UI framework
 - **TypeScript** - Type safety
 - **Material-UI 5.14.17** - Component library
-- **Recharts & Nivo** - Data visualization
+- **Recharts & Nivo** & **AWS QuickSight** - Data visualization
 - **React Router** - Navigation
 
 ### **Backend**
@@ -168,7 +168,6 @@ SmartKitchen/
 - **AWS Amplify** - Frontend hosting
 - **API Gateway** - API management
 - **Serverless Framework** - Infrastructure as Code
-- **GitHub Actions** - CI/CD pipeline
 
 
 ## 🙏 Acknowledgments
@@ -176,7 +175,7 @@ SmartKitchen/
 - **AWS team** for providing the serverless infrastructure, sandbox account, and an amazing hackathon experience.  
 - **Our team mentors** for their valuable guidance, feedback, and support throughout the hackathon preparation.  
 - **Hackathon organizers** for creating this opportunity and fostering collaboration and innovation.
-- **Team originFive members** for all the efforts and contribution for making the project a great success!
+- **Team originFive members** for the hard work, dedication, and collaboration that helped bring this project to the finals!
 
 
 ---
