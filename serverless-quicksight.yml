@@ -1,0 +1,91 @@
+service: smartkitchen-quicksight
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  stage: ${opt:stage, 'prod'}
+  
+  environment:
+    AWS_ACCOUNT_ID: ${env:AWS_ACCOUNT_ID, '761386521687'}
+    QUICKSIGHT_DASHBOARD_ID: ${env:QUICKSIGHT_DASHBOARD_ID, 'e098949c-c065-42b6-a884-ac41d4167ad5'}
+    QUICKSIGHT_USER_ARN: ${env:QUICKSIGHT_USER_ARN}
+    NODE_ENV: production
+    
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - quicksight:GetDashboardEmbedUrl
+            - quicksight:DescribeDashboard
+          Resource:
+            - arn:aws:quicksight:us-east-1:${env:AWS_ACCOUNT_ID, '761386521687'}:dashboard/*
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/stock*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/order-stock*
+
+functions:
+  # QuickSight Embed URL Function
+  quicksightEmbed:
+    handler: quicksight_embed_lambda.lambda_handler
+    timeout: 30
+    events:
+      - httpApi:
+          path: /get-embed-url
+          method: get
+          cors: true
+    environment:
+      AWS_ACCOUNT_ID: ${env:AWS_ACCOUNT_ID, '761386521687'}
+      QUICKSIGHT_DASHBOARD_ID: ${env:QUICKSIGHT_DASHBOARD_ID, 'e098949c-c065-42b6-a884-ac41d4167ad5'}
+      QUICKSIGHT_USER_ARN: ${env:QUICKSIGHT_USER_ARN}
+
+  # Stock API (migrated from Express.js)
+  stockApi:
+    handler: stock_api_lambda.lambda_handler
+    events:
+      - httpApi:
+          path: /api/stock
+          method: get
+          cors: true
+
+  # Low Stock API (migrated from Express.js)
+  lowStockApi:
+    handler: low_stock_api_lambda.lambda_handler
+    events:
+      - httpApi:
+          path: /api/low-stock
+          method: get
+          cors: true
+
+  # Order Stock API (migrated from Express.js)
+  orderStockApi:
+    handler: order_stock_api_lambda.lambda_handler
+    events:
+      - httpApi:
+          path: /api/order-stock
+          method: get
+          cors: true
+
+  # Update Order Status API (migrated from Express.js)
+  updateOrderStatus:
+    handler: update_order_status_lambda.lambda_handler
+    events:
+      - httpApi:
+          path: /api/order-stock/{orderId}/status
+          method: put
+          cors: true
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux

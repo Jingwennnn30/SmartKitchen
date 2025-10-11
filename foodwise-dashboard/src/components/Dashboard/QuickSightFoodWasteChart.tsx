@@ -22,19 +22,19 @@ const QuickSightFoodWasteChart: React.FC = () => {
     const [embedUrl, setEmbedUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [retryCount, setRetryCount] = useState<number>(0);
 
-    // Backend URL - configurable for different environments
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+
+    // Lambda API URL - using AWS Lambda function instead of Express.js backend
+    const LAMBDA_API_URL = 'https://bg4xe3t4be.execute-api.us-east-1.amazonaws.com/default/quicksight-foodwaste';
 
     const fetchEmbedUrl = useCallback(async () => {
         setLoading(true);
         setError(null);
 
         try {
-            console.log('Fetching QuickSight embed URL from:', `${BACKEND_URL}/get-embed-url`);
+            console.log('Fetching QuickSight embed URL from Lambda:', LAMBDA_API_URL);
             
-            const response = await fetch(`${BACKEND_URL}/get-embed-url`, {
+            const response = await fetch(LAMBDA_API_URL, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -51,7 +51,6 @@ const QuickSightFoodWasteChart: React.FC = () => {
             
             if (data.success && data.embedUrl) {
                 setEmbedUrl(data.embedUrl);
-                setRetryCount(0);
                 console.log('Successfully loaded QuickSight embed URL');
             } else {
                 throw new Error(data.error || 'Failed to get embed URL');
@@ -76,7 +75,7 @@ const QuickSightFoodWasteChart: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [BACKEND_URL, retryCount]);
+    }, []);
 
     // Load embed URL on component mount
     useEffect(() => {
@@ -84,7 +83,6 @@ const QuickSightFoodWasteChart: React.FC = () => {
     }, [fetchEmbedUrl]);
 
     const handleRetry = () => {
-        setRetryCount(prev => prev + 1);
         fetchEmbedUrl();
     };
 
@@ -162,7 +160,7 @@ const QuickSightFoodWasteChart: React.FC = () => {
                     </Button>
                     {process.env.NODE_ENV === 'development' && (
                         <Typography variant="caption" color="textSecondary">
-                            Backend URL: {BACKEND_URL}
+                            Lambda API: {LAMBDA_API_URL}
                         </Typography>
                     )}
                 </Box>
