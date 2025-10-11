@@ -10,10 +10,12 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { fetchLowStockData, LowStockItem } from "../../services/lowStockService";
+import orderCreationService from "../../services/orderCreationService";
 
 const LowStockSection: React.FC = () => {
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderingItemId, setOrderingItemId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,8 +37,33 @@ const LowStockSection: React.FC = () => {
     loadData();
   }, []);
 
-  const handleOrderClick = (item: LowStockItem) => {
-    navigate(`/inventory/order?item=${encodeURIComponent(item.item_name)}`);
+  const handleOrderClick = async (item: LowStockItem) => {
+    setOrderingItemId(item.item_name);
+    try {
+      // Calculate suggested order quantity (safety level + 20% buffer)
+      const suggestedQuantity = Math.round(item.safety_stock_level * 1.2);
+      
+      console.log(`📦 Creating order for low stock item: ${item.item_name}`);
+      
+      // Call the same Lambda function used in supplier order page
+      const result = await orderCreationService.createManagerOrder(
+        item.item_name,
+        suggestedQuantity,
+        item.unit
+      );
+      
+      if (result) {
+        console.log('✅ Order created successfully:', result);
+        alert(`Order created successfully!\n\nOrder ID: ${result.order_id}\nItem: ${item.item_name}\nQuantity: ${suggestedQuantity} ${item.unit}\n\nAn email notification has been sent.`);
+      } else {
+        alert('Failed to create order. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error creating order:', error);
+      alert('Error creating order. Please try again.');
+    } finally {
+      setOrderingItemId(null);
+    }
   };
 
   return (
@@ -92,7 +119,8 @@ const LowStockSection: React.FC = () => {
                       variant="contained"
                       size="small"
                       color={isCritical ? "error" : "primary"}
-                    //   onClick={() => handleOrderClick(item)}
+                      onClick={() => handleOrderClick(item)}
+                      disabled={orderingItemId === item.item_name}
                       sx={{
                         position: "absolute",
                         top: 8,
@@ -105,7 +133,7 @@ const LowStockSection: React.FC = () => {
                         py: 0.2,
                       }}
                     >
-                      Order
+                      {orderingItemId === item.item_name ? "Ordering..." : "Order"}
                     </Button>
 
                     <CardContent sx={{ p: 0, mt: 4 }}>
