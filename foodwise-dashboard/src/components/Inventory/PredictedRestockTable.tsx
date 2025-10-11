@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { fetchRestockPrediction } from "../../services/restockPredictionService";
+import orderCreationService from "../../services/orderCreationService";
 
 interface Item {
   id: number;
@@ -47,7 +48,26 @@ const getUrgencyColor = (urgency: Item["urgency"]) => {
 const PredictedRestockTable: React.FC = () => {
   const [rows, setRows] = useState<Item[]>([]);
   const [tableLoading, setTableLoading] = useState(true);
+  const [submittingRowId, setSubmittingRowId] = useState<number | null>(null);
 
+  const handleRestock = async (row: Item) => {
+    setSubmittingRowId(row.id);
+    try {
+      // Use integer quantity to avoid decimal error
+      const quantity = Math.round(row.suggestedOrder);
+      const result = await orderCreationService.createManagerOrder(row.name, quantity, "unit");
+      if (result) {
+        alert(`Order created! Order ID: ${result.order_id}\nEmail notification sent.`);
+      } else {
+        alert("Failed to create order. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error creating order:", error);
+      alert("Error creating order. Please try again.");
+    } finally {
+      setSubmittingRowId(null);
+    }
+  };
   useEffect(() => {
     async function loadData() {
       setTableLoading(true);
@@ -179,8 +199,10 @@ const PredictedRestockTable: React.FC = () => {
                       color="primary"
                       size="small"
                       startIcon={<AddIcon />}
+                      disabled={submittingRowId === row.id}
+                      onClick={() => handleRestock(row)}
                     >
-                      Restock
+                      {submittingRowId === row.id ? "Processing..." : "Restock"}
                     </Button>
                   </TableCell>
                 </TableRow>
