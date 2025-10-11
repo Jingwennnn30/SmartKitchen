@@ -1,0 +1,13 @@
+{
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "Origin": "http://localhost:3000"
+  },
+  "body": "{\"type\": \"daily\", \"startDate\": \"26/9/2025\", \"endDate\": \"30/9/2025\"}",
+  "requestContext": {
+    "requestId": "test-request-id",
+    "stage": "dev"
+  },
+  "isBase64Encoded": false
+}
