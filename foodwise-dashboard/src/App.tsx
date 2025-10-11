@@ -8,7 +8,8 @@ import {
   Route, 
   createRoutesFromElements,
   Outlet,
-  useNavigate
+  useNavigate,
+  Navigate
 } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import NearExpiredItems from './components/NearExpiredItems/NearExpiredItems';
@@ -180,7 +181,7 @@ const LoginWrapper = () => {
 
 // Fix 5: Add protected route component for role-based access
 const ProtectedRoute: React.FC<{ 
-  children: React.ReactNode; 
+  children: React.ReactNode | (() => React.ReactNode); 
   allowedRoles: string[] 
 }> = ({ children, allowedRoles }) => {
   const navigate = useNavigate();
@@ -217,13 +218,31 @@ const ProtectedRoute: React.FC<{
     return null;
   }
 
-  return <>{children}</>;
+  return <>{typeof children === 'function' ? children() : children}</>;
 };
 
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
+      {/* Default route - redirects to appropriate page based on auth status */}
+      <Route 
+        path="/" 
+        element={
+          <React.Suspense fallback={<div>Loading...</div>}>
+            {localStorage.getItem('idToken') 
+              ? <ProtectedRoute allowedRoles={['manager', 'chef', 'customer']}>
+                  {() => {
+                    const role = localStorage.getItem('userRole') || 'customer';
+                    const redirectUrl = getRedirectUrl(role);
+                    return <Navigate to={redirectUrl} replace />;
+                  }}
+                </ProtectedRoute>
+              : <Navigate to="/login" replace />
+            }
+          </React.Suspense>
+        } 
+      />
       <Route path="/login" element={<LoginWrapper />} />
       
       {/* Protected Routes with Role-based Access */}

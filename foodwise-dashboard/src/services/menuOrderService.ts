@@ -26,27 +26,14 @@ export interface CustomerOrder {
     items: OrderItem[];
     totalAmount: number;
     specialRequests?: string;
+    orderDate?: string;
+    status?: 'pending' | 'processing' | 'completed' | 'cancelled';
 }
 
 export interface OrderResponse {
     success: boolean;
     orderId?: string;
     error?: string;
-}
-
-// Re-export interfaces from your existing DynamicMenuService for consistency
-export interface DynamicMenuItem {
-    name: string;
-    price: string;
-    description: string;
-    ingredients: string;
-}
-
-export interface DynamicMenuResponse {
-    menu: DynamicMenuItem[];
-    selectedItems: string[];
-    generatedAt: string;
-    totalDishes: number;
 }
 
 export class MenuService {
@@ -95,51 +82,50 @@ export class MenuService {
     }
 
     /**
-     * Get menu items formatted for your DynamicMenuService interface
-     */
-    static async getFormattedMenuItems(): Promise<MenuItem[]> {
-        try {
-            const menuItems = await this.getAllMenuItems();
-            
-            // Convert to the format expected by your DynamicMenuService
-            return menuItems.map(item => ({
-                dish_name: item.dish_name,
-                price: item.price,
-                category: item.category
-            }));
-        } catch (error) {
-            console.error('Error formatting menu items:', error);
-            throw error;
-        }
-    }
-
-    /**
      * Save order to DynamoDB via API Gateway
+     * 
+     * @param order CustomerOrder object with order details
+     * @returns OrderResponse with success status and orderId if successful
+     * @throws Error if the order cannot be saved
      */
     static async saveOrder(order: CustomerOrder): Promise<OrderResponse> {
         try {
             console.log('Saving order via API Gateway...', order);
             
+            // Validate order data before sending to API
+            if (!order.customerName || !order.tableNumber) {
+                throw new Error('Customer name and table number are required');
+            }
+            
+            if (!order.items || order.items.length === 0) {
+                throw new Error('Order must contain at least one item');
+            }
+            
+            // Send order to API Gateway endpoint
             const response = await fetch(SAVE_ORDER_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(order)
             });
 
             console.log('Order API Response Status:', response.status);
             
+            // Handle API errors
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 console.error('Response error text:', errorText);
-                throw new Error(`Failed to save order: ${errorText}`);
+                throw new Error(`Server error: ${response.status} - ${errorText || response.statusText}`);
             }
 
+            // Parse response data
             const data: OrderResponse = await response.json();
             
+            // Check for success flag in response
             if (!data.success) {
-                throw new Error(data.error || 'Failed to save order');
+                throw new Error(data.error || 'Order was not saved successfully');
             }
 
             console.log('Order saved successfully:', data);
@@ -148,12 +134,15 @@ export class MenuService {
         } catch (error) {
             console.error('Error saving order:', error);
             
-            // Handle CORS-related fetch errors gracefully
+            // Handle different types of errors
             if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-                console.error('This looks like a CORS error. Check your API Gateway CORS settings.');
-                throw new Error('CORS error: Unable to save order. Please check API Gateway CORS configuration.');
+                console.error('This looks like a CORS error or network issue.');
+                throw new Error('Network error: Unable to save order. Please check your internet connection.');
+            } else if (error instanceof SyntaxError) {
+                throw new Error('Invalid response from server. Please try again.');
             }
             
+            // Re-throw the original error if not handled above
             throw error;
         }
     }

@@ -39,11 +39,10 @@ const MenuPage: React.FC = () => {
             setLoading(true);
             setError(null); // Clear previous errors
             
-            // Use MenuService to get formatted menu items
-            const formattedItems = await MenuService.getFormattedMenuItems();
-            
+            // Fetch menu items from MenuService
+            const fetchedItems = await MenuService.getAllMenuItems();
             // Transform to match your MenuItem interface
-            const items: MenuItem[] = formattedItems.map(item => ({
+            const items: MenuItem[] = fetchedItems.map((item: any) => ({
                 dishName: item.dish_name,
                 price: item.price,
                 category: item.category || 'Other' // Provide default category
@@ -103,9 +102,16 @@ const MenuPage: React.FC = () => {
             return;
         }
 
+        if (cart.length === 0) {
+            alert('Your cart is empty. Please add items before placing an order.');
+            return;
+        }
+
         try {
             setLoading(true);
+            setError(null);
             
+            // Format order data according to the API requirements
             const customerOrder = {
                 customerName: customerName.trim(),
                 tableNumber: tableNumber.trim(),
@@ -115,19 +121,32 @@ const MenuPage: React.FC = () => {
                     price: item.price
                 })),
                 totalAmount: calculateTotal(),
-                specialRequests: specialRequests.trim()
+                specialRequests: specialRequests ? specialRequests.trim() : '',
+                orderDate: new Date().toISOString(), // Add timestamp for the order
             };
 
-            await MenuService.saveOrder(customerOrder);
+            console.log('Submitting order to database:', customerOrder);
+            
+            // Save order to database via API
+            const response = await MenuService.saveOrder(customerOrder);
+            
+            // Handle successful order
+            console.log('Order saved successfully:', response);
+            
+            // Reset state after successful order
             setCart([]);
             setIsCartOpen(false);
             setCustomerName('');
             setTableNumber('');
             setSpecialRequests('');
-            alert('Order placed successfully!');
-        } catch (error) {
+            
+            // Show success message
+            alert(`Order placed successfully! Order ID: ${response.orderId || 'N/A'}`);
+            
+        } catch (error: any) {
             console.error('Error placing order:', error);
-            alert('Failed to place order. Please try again.');
+            setError(`Failed to place order: ${error.message || 'Unknown error'}`);
+            alert(`Failed to place order: ${error.message || 'Please try again.'}`);
         } finally {
             setLoading(false);
         }
