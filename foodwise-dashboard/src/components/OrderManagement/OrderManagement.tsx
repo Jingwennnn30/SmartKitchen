@@ -171,7 +171,7 @@ const OrderManagement: React.FC = () => {
                 Orders in Queue
               </Typography>
               <Typography variant="h4" sx={{ mt: 1, color: "#1976d2" }}>
-                {loading ? "—" : ordersInQueue}
+                {ordersInQueue}
               </Typography>
             </StyledPaper>
           </Grid>
@@ -181,7 +181,7 @@ const OrderManagement: React.FC = () => {
                 Average Wait Time
               </Typography>
               <Typography variant="h4" sx={{ mt: 1, color: "#1976d2" }}>
-                {loading ? "—" : `${averageWait}m`}
+                { `${averageWait}m`}
               </Typography>
             </StyledPaper>
           </Grid>
@@ -191,7 +191,7 @@ const OrderManagement: React.FC = () => {
                 Longest Waiting Time
               </Typography>
               <Typography variant="h4" sx={{ mt: 1, color: "#1976d2" }}>
-                {loading ? "—" : `${longestWait}m`}
+                {`${longestWait}m`}
               </Typography>
             </StyledPaper>
           </Grid>
