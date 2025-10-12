@@ -1045,7 +1045,7 @@ const PerformanceTrends: React.FC = () => {
                                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                             }}>
                                 <Typography variant="body2" sx={{ color: '#0369a1', fontWeight: 'bold', mb: 1 }}>
-                                    💰 Monthly Avg Cost
+                                    Monthly Avg Cost
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: '#0c4a6e', fontWeight: 'bold', mb: 1 }}>
                                     {wasteLoading ? (
@@ -1074,7 +1074,7 @@ const PerformanceTrends: React.FC = () => {
                                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                             }}>
                                 <Typography variant="body2" sx={{ color: '#dc2626', fontWeight: 'bold', mb: 1 }}>
-                                    📊 Current Waste Rate
+                                    Current Waste Rate
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: '#991b1b', fontWeight: 'bold', mb: 2 }}>
                                     {wasteLoading ? (
@@ -1124,7 +1124,7 @@ const PerformanceTrends: React.FC = () => {
                                     fontWeight: 'bold', 
                                     mb: 1 
                                 }}>
-                                    💰 Monthly Savings
+                                    Monthly Savings
                                 </Typography>
                                 <Typography variant="h4" sx={{ 
                                     color: '#047857',
