@@ -73,7 +73,7 @@ const OrderManagement: React.FC = () => {
     };
 
     loadOrders();
-    const refreshInterval = setInterval(loadOrders, 10000);
+    const refreshInterval = setInterval(loadOrders, 1000);
     return () => clearInterval(refreshInterval);
   }, []);
 
@@ -205,14 +205,7 @@ const OrderManagement: React.FC = () => {
             Order Queue
           </Typography>
 
-          {loading ? (
-            <Box sx={{ textAlign: "center", p: 4 }}>
-              <CircularProgress />
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Loading orders...
-              </Typography>
-            </Box>
-          ) : orders.length === 0 ? (
+          { orders.length === 0 ? (
             <Typography
               variant="body2"
               sx={{ p: 2, color: "text.secondary" }}
