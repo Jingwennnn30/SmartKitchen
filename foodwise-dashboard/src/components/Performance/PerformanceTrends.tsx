@@ -707,10 +707,19 @@ const PerformanceTrends: React.FC = () => {
                                     justifyContent: 'center',
                                     flexDirection: 'column'
                                 }}>
-                                    <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                    <Typography variant="h4" sx={{ 
+                                        fontWeight: 'bold', 
+                                        color: '#1f2937',
+                                        fontSize: '1.8rem',
+                                        lineHeight: 1
+                                    }}>
                                         {staffEfficiency.score}%
                                     </Typography>
-                                    <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                                    <Typography variant="caption" sx={{ 
+                                        color: '#6b7280', 
+                                        fontSize: '0.75rem',
+                                        marginTop: '2px'
+                                    }}>
                                         Efficiency
                                     </Typography>
                                 </Box>
