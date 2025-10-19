@@ -112,7 +112,6 @@ const DashboardVoiceAlerts: React.FC = () => {
         
         if (newState) {
             console.log("Enabling Dashboard Voice Alerts...");
-            speakText("Dashboard voice alerts are now enabled");
         } else {
             console.log("Disabling Dashboard Voice Alerts...");
         }

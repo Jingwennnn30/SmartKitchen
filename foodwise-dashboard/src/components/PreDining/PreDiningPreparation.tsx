@@ -144,7 +144,7 @@ const PreDiningPreparation: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string>(() => {
         // Default to tomorrow (Oct 11, 2025)
-        const today = new Date('2025-10-10');
+        const today = new Date('2025-10-12');
         const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
         return tomorrow.toISOString().split('T')[0];
     });

@@ -29,7 +29,7 @@ const OrderAggregationSection: React.FC<OrderAggregationSectionProps> = ({ loadi
 
         loadAggregatedOrders();
         // refresh every 10 seconds (optional)
-        const interval = setInterval(loadAggregatedOrders, 10000);
+        const interval = setInterval(loadAggregatedOrders, 1000);
         return () => clearInterval(interval);
     }, []);
 
@@ -40,14 +40,7 @@ const OrderAggregationSection: React.FC<OrderAggregationSectionProps> = ({ loadi
                     Order Aggregation
                 </Typography>
 
-                {loading || loadingData ? (
-                    <Box sx={{ textAlign: "center", p: 4 }}>
-                        <CircularProgress />
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                            Loading aggregated orders...
-                        </Typography>
-                    </Box>
-                ) : error ? (
+                {error ? (
                     <Typography color="error" sx={{ p: 2 }}>
                         {error}
                     </Typography>
