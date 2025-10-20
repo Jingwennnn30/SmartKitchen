@@ -32,8 +32,8 @@ const OrderQueueSection: React.FC = () => {
     };
 
     loadOrders();
-    const refreshInterval = setInterval(loadOrders, 1000);
-    return () => clearInterval(refreshInterval);
+    // const refreshInterval = setInterval(loadOrders, 1000);
+    // return () => clearInterval(refreshInterval);
   }, []);
 
   // ---- Live timer update ----

@@ -1,16 +1,16 @@
 const api = "https://3lgobffvjb.execute-api.us-east-1.amazonaws.com/default/retrieve-order-queue";
 
 export interface OrderDish {
-    dish_name: string;
-    order_completed_time: string | null;
-    order_placed_time: string;
-    quantity: number;
+  dish_name: string;
+  order_completed_time: string | null;
+  order_placed_time: string;
+  quantity: number;
 }
 
 export interface OrderQueueItem {
-    order_id: string;
-    customer_id: string;
-    dishes: OrderDish[];
+  order_id: string;
+  customer_id: string;
+  dishes: OrderDish[];
 }
 
 export async function completeOrderDish(order_id: string, dish_name: string): Promise<void> {
@@ -49,26 +49,90 @@ export async function completeOrderDish(order_id: string, dish_name: string): Pr
  * Data comes from Lambda (customer_waiting_time table).
  */
 export async function fetchOrderQueue(): Promise<OrderQueueItem[]> {
-    try {
-        console.log("Fetching order queue data from", api);
+  // try {
+  //     console.log("Fetching order queue data from", api);
 
-        const response = await fetch(api, { method: "GET" });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  //     const response = await fetch(api, { method: "GET" });
+  //     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-        const data: OrderQueueItem[] = await response.json();
+  //     const data: OrderQueueItem[] = await response.json();
 
-        // (Optional) Sort by order_placed_time ascending (oldest first)
-        const getEarliestTime = (order: OrderQueueItem) => {
-            const times = order.dishes.map(d => new Date(d.order_placed_time).getTime());
-            return Math.min(...times);
-        };
+  //     // (Optional) Sort by order_placed_time ascending (oldest first)
+  //     const getEarliestTime = (order: OrderQueueItem) => {
+  //         const times = order.dishes.map(d => new Date(d.order_placed_time).getTime());
+  //         return Math.min(...times);
+  //     };
 
-        const sorted = data.slice().sort((a, b) => getEarliestTime(a) - getEarliestTime(b));
+  //     const sorted = data.slice().sort((a, b) => getEarliestTime(a) - getEarliestTime(b));
 
-        console.log("Fetched (sorted) order queue data:", sorted);
-        return sorted;
-    } catch (error) {
-        console.error("Failed to fetch order queue data:", error);
-        throw error;
-    }
+  //     console.log("Fetched (sorted) order queue data:", sorted);
+  //     return sorted;
+  // } catch (error) {
+  //     console.error("Failed to fetch order queue data:", error);
+  //     throw error;
+  // }
+  
+  // Mocked data for development/testing
+  const secondsAgo = (s: number) => new Date(Date.now() - s * 1000).toISOString();
+  const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+
+  // Use small second offsets for in-progress items so a live timer will clearly count forward.
+  const mock: OrderQueueItem[] = [
+    {
+      order_id: "ORD-1001",
+      customer_id: "CUST-501",
+      dishes: [
+        {
+          dish_name: "Margherita Pizza",
+          // just placed ~12 seconds ago so UI timer increments visibly from near zero
+          order_placed_time: minutesAgo(5),
+          order_completed_time: null,
+          quantity: 1,
+        },
+        {
+          dish_name: "Garlic Bread",
+          // completed 5 minutes ago
+          order_placed_time: minutesAgo(5),
+          order_completed_time: minutesAgo(3),
+          quantity: 2,
+        },
+      ],
+    },
+    {
+      order_id: "ORD-1002",
+      customer_id: "CUST-502",
+      dishes: [
+        {
+          dish_name: "Spaghetti Bolognese",
+          // in progress, placed ~45 seconds ago
+          order_placed_time: secondsAgo(45),
+          order_completed_time: null,
+          quantity: 1,
+        },
+        {
+          dish_name: "Tiramisu",
+          // in progress, placed ~30 seconds ago
+          order_placed_time: secondsAgo(30),
+          order_completed_time: null,
+          quantity: 1,
+        },
+      ],
+    },
+    {
+      order_id: "ORD-1003",
+      customer_id: "CUST-503",
+      dishes: [
+        {
+          dish_name: "Caesar Salad",
+          order_placed_time: secondsAgo(40),
+          order_completed_time: minutesAgo(10),
+          quantity: 1,
+        },
+      ],
+    },
+  ];
+
+  // keep the small simulated network delay
+  await new Promise((res) => setTimeout(res, 150));
+  return mock;
 }

@@ -31,8 +31,8 @@ const OrderKPISection: React.FC = () => {
     };
 
     loadOrders();
-    const refreshInterval = setInterval(loadOrders, 1000);
-    return () => clearInterval(refreshInterval);
+    // const refreshInterval = setInterval(loadOrders, 1000);
+    // return () => clearInterval(refreshInterval);
   }, []);
 
   // Update timer every second
