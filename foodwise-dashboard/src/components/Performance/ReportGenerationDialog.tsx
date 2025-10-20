@@ -80,18 +80,14 @@ const ReportGenerationDialog: React.FC<ReportGenerationDialogProps> = ({
 
   const handleGenerateReport = async (type: 'daily' | 'weekly' | 'monthly') => {
     try {
-      if (!data) {
-        setError('No data available for report generation. Please select dates first.');
-        return;
-      }
-      
+      // Allow report generation even without data - will use mock data for Sept 19, 2025
       setError(null);
       setSuccess(null);
       setGeneratingReport(type);
 
       const datePayload = {
-        selectedStartDate: data.selectedStartDate,
-        selectedEndDate: data.selectedEndDate
+        selectedStartDate: data?.selectedStartDate || '19/9/2025',
+        selectedEndDate: data?.selectedEndDate || '19/9/2025'
       };
 
       console.log(`Generating ${type} report with data:`, datePayload);
@@ -194,6 +190,12 @@ const ReportGenerationDialog: React.FC<ReportGenerationDialogProps> = ({
         <Typography variant="body1" sx={{ mb: 3, color: '#6b7280' }}>
           Select the type of performance report you'd like to generate. Each report provides detailed insights tailored to your analysis needs.
         </Typography>
+
+          {!data && !error && !success && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Using demo data for September 19, 2025. Select dates in the dashboard for custom reports.
+            </Alert>
+          )}
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>

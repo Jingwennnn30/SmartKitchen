@@ -393,8 +393,139 @@ const PerformanceTrends: React.FC = () => {
 
     const handleViewOrderDetails = (date: string) => {
         setSelectedTimeSlot(date);
+        
+        // Mock data for September 19, 2025
+        const mockOrderDetails = [
+            {
+                date: '19/9/2025',
+                dish_id: 'NASI001',
+                dish_name: 'Nasi Lemak Special',
+                quantity: 145,
+                price: 12.50,
+                revenue: 1812.50,
+                table_size: 3,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Breakfast'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'ROTI002',
+                dish_name: 'Roti Canai with Curry',
+                quantity: 98,
+                price: 8.00,
+                revenue: 784.00,
+                table_size: 2,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Breakfast'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'MILO003',
+                dish_name: 'Milo Ais',
+                quantity: 187,
+                price: 4.50,
+                revenue: 841.50,
+                table_size: 2,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Beverage'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'CHAR004',
+                dish_name: 'Char Kway Teow',
+                quantity: 132,
+                price: 15.00,
+                revenue: 1980.00,
+                table_size: 3,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Lunch'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'LAKSA005',
+                dish_name: 'Laksa Penang',
+                quantity: 89,
+                price: 16.50,
+                revenue: 1468.50,
+                table_size: 2,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Lunch'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'SATE006',
+                dish_name: 'Satay Ayam (10 sticks)',
+                quantity: 156,
+                price: 18.00,
+                revenue: 2808.00,
+                table_size: 4,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Dinner'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'NASI007',
+                dish_name: 'Nasi Goreng Kampung',
+                quantity: 124,
+                price: 14.00,
+                revenue: 1736.00,
+                table_size: 3,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Dinner'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'IKAN008',
+                dish_name: 'Ikan Bakar Set',
+                quantity: 76,
+                price: 25.00,
+                revenue: 1900.00,
+                table_size: 4,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Dinner'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'CEND009',
+                dish_name: 'Cendol Special',
+                quantity: 112,
+                price: 7.50,
+                revenue: 840.00,
+                table_size: 2,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Dessert'
+            },
+            {
+                date: '19/9/2025',
+                dish_id: 'TEKT010',
+                dish_name: 'Teh Tarik',
+                quantity: 203,
+                price: 3.50,
+                revenue: 710.50,
+                table_size: 2,
+                is_special_event: false,
+                is_holiday: false,
+                meal_type: 'Beverage'
+            }
+        ];
+        
         // Filter items from the API data for the selected date
-        const dayItems = data?.items?.filter(item => item.date === date) || [];
+        let dayItems = data?.items?.filter(item => item.date === date) || [];
+        
+        // If the selected date is September 19, 2025 and no API data exists, use mock data
+        if (date === '19/9/2025' && dayItems.length === 0) {
+            dayItems = mockOrderDetails;
+        }
+        
         setOrderDetails(dayItems);
         setDialogOpen(true);
     };
@@ -404,8 +535,19 @@ const PerformanceTrends: React.FC = () => {
         const dailyBreakdown = data?.daily_breakdown || {};
         const apiSummary = data?.summary;
         
+        // Add mock data for September 19, 2025 for demo purposes
+        const mockData = {
+            '19/9/2025': {
+                orders: 487,
+                revenue: 14610.00
+            }
+        };
+        
+        // Merge mock data with API data
+        const mergedBreakdown = { ...dailyBreakdown, ...mockData };
+        
         // Convert daily breakdown to array format for table display
-        const allDailyData = Object.entries(dailyBreakdown).map(([date, stats]) => {
+        const allDailyData = Object.entries(mergedBreakdown).map(([date, stats]) => {
             // Parse date to determine if it's weekend/special event
             const [day, month, year] = date.split('/');
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
