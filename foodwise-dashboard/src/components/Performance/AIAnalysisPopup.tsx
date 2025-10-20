@@ -452,6 +452,134 @@ const AIAnalysisPopup: React.FC<AIAnalysisPopupProps> = ({
                             </CardContent>
                         </Card>
 
+                        {/* Category Analysis - NEW SECTION */}
+                        {getAIData().category_analysis && getAIData().category_analysis.length > 0 && (
+                            <Card sx={{ mb: 3, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                                <CardContent sx={{ p: 3 }}>
+                                    <Typography variant="h6" sx={{ 
+                                        mb: 3, 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: 1,
+                                        fontWeight: 'bold',
+                                        color: '#1f2937'
+                                    }}>
+                                        <AssessmentIcon sx={{ color: '#6366f1', fontSize: 24 }} />
+                                        Waste Category Analysis
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {getAIData().category_analysis.map((category: any, index: number) => {
+                                            const getTrendColor = (trend: string) => {
+                                                switch(trend) {
+                                                    case 'increasing': return '#ef4444';
+                                                    case 'decreasing': return '#10b981';
+                                                    default: return '#6b7280';
+                                                }
+                                            };
+
+                                            const getTrendBgColor = (trend: string) => {
+                                                switch(trend) {
+                                                    case 'increasing': return '#fef2f2';
+                                                    case 'decreasing': return '#f0fdf4';
+                                                    default: return '#f8fafc';
+                                                }
+                                            };
+
+                                            return (
+                                                <Grid item xs={12} md={6} key={index}>
+                                                    <Card sx={{ 
+                                                        height: '100%',
+                                                        backgroundColor: getTrendBgColor(category.trend),
+                                                        border: `1px solid ${getTrendColor(category.trend)}30`,
+                                                        borderRadius: '12px',
+                                                        transition: 'all 0.3s ease',
+                                                        '&:hover': {
+                                                            transform: 'translateY(-2px)',
+                                                            boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                                                        }
+                                                    }}>
+                                                        <CardContent sx={{ p: 2.5 }}>
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                                                <Typography variant="h6" sx={{ 
+                                                                    fontWeight: 'bold',
+                                                                    color: '#1f2937'
+                                                                }}>
+                                                                    {category.category}
+                                                                </Typography>
+                                                                <Chip 
+                                                                    label={category.trend}
+                                                                    size="small"
+                                                                    icon={getTrendIcon(category.trend)}
+                                                                    sx={{ 
+                                                                        backgroundColor: getTrendColor(category.trend) + '20',
+                                                                        color: getTrendColor(category.trend),
+                                                                        fontWeight: 'bold',
+                                                                        textTransform: 'capitalize'
+                                                                    }}
+                                                                />
+                                                            </Box>
+                                                            
+                                                            <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                                                                <Grid item xs={6}>
+                                                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                                                        Waste Amount
+                                                                    </Typography>
+                                                                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                                                        {category.waste_amount}kg
+                                                                    </Typography>
+                                                                </Grid>
+                                                                <Grid item xs={6}>
+                                                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                                                        Percentage
+                                                                    </Typography>
+                                                                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                                                                        {category.percentage}%
+                                                                    </Typography>
+                                                                </Grid>
+                                                                <Grid item xs={12}>
+                                                                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                                                        Cost Impact
+                                                                    </Typography>
+                                                                    <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#dc2626' }}>
+                                                                        {category.cost_impact}
+                                                                    </Typography>
+                                                                </Grid>
+                                                            </Grid>
+
+                                                            <Divider sx={{ my: 1.5 }} />
+                                                            
+                                                            <Box sx={{ 
+                                                                backgroundColor: 'white', 
+                                                                p: 1.5, 
+                                                                borderRadius: '8px',
+                                                                border: '1px solid #e5e7eb'
+                                                            }}>
+                                                                <Typography variant="caption" sx={{ 
+                                                                    color: '#6b7280', 
+                                                                    fontWeight: 'bold',
+                                                                    display: 'block',
+                                                                    mb: 0.5
+                                                                }}>
+                                                                    💡 AI Recommendation
+                                                                </Typography>
+                                                                <Typography variant="body2" sx={{ 
+                                                                    color: '#374151',
+                                                                    lineHeight: 1.5,
+                                                                    fontSize: '13px'
+                                                                }}>
+                                                                    {category.recommendation}
+                                                                </Typography>
+                                                            </Box>
+                                                        </CardContent>
+                                                    </Card>
+                                                </Grid>
+                                            );
+                                        })}
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {/* Detailed Analysis */}
                         <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                             <CardContent sx={{ p: 3 }}>

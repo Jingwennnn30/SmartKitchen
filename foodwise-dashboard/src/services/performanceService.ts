@@ -83,10 +83,20 @@ export interface AIInsightsResponse {
             annual_potential: number;
             percentage_reduction: number;
         };
+        category_analysis?: Array<{
+            category: string;
+            waste_amount: number;
+            percentage: number;
+            cost_impact: string;
+            trend: string;
+            recommendation: string;
+        }>;
         data_quality_score?: number;
+        confidence_level?: string;
+        last_updated?: string;
     };
-    analysis_timestamp: string;
-    analysis_type: string;
+    analysis_timestamp?: string;
+    analysis_type?: string;
 }
 
 export async function fetchPerformanceData(
@@ -133,7 +143,125 @@ export async function fetchWasteAnalysisData(
 
 // New function to get AI insights
 export async function fetchAIInsights(wasteData: WasteAnalysisResponse): Promise<AIInsightsResponse> {
-    // Replace with your actual API Gateway URL for the AI analysis Lambda
+    // Mock AI insights for demo purposes
+    console.log('🤖 Generating mock AI insights for demo...');
+    
+    // Create comprehensive mock AI insights
+    const mockAIInsights: AIInsightsResponse = {
+        ai_insights: {
+            analysis_text: `## AI-Powered Waste & Cost Analysis
+
+**Executive Summary:**
+Based on comprehensive analysis of your waste management data, our AI has identified key patterns and opportunities for optimization. Your current waste rate of 5.6% is slightly above the industry target of 5%, presenting an opportunity for monthly savings of approximately RM 2,400.
+
+**Performance Analysis:**
+Your food waste management shows a **stable trend** with consistent monitoring. The current monthly average cost of RM 18,000 indicates good operational efficiency, though there's room for improvement through strategic interventions.
+
+**Critical Findings:**
+• Vegetables account for 28% of total waste (28kg) - highest category
+• Meat waste represents 22% (22kg) - requires immediate attention due to high cost impact
+• Fruits waste at 18% (18kg) shows opportunity for better inventory rotation
+• Combined waste reduction could save RM 28,800 annually
+
+**AI Recommendations:**
+Our machine learning models suggest implementing dynamic pricing strategies, enhanced inventory forecasting, and staff training programs to achieve optimal waste reduction targets.`,
+            
+            key_metrics: {
+                current_waste_rate: 5.6,
+                target_waste_rate: 5.0,
+                monthly_avg_cost: 18000,
+                trend_direction: 'stable',
+                trend_percentage: 0.2,
+                performance_status: 'Good - Minor Optimization Needed'
+            },
+            
+            quick_insights: [
+                '🌿 Vegetables are the largest waste category at 28kg (28%) - implement first-in-first-out rotation',
+                '🥩 Meat waste at 22kg (22%) has highest cost impact - consider portion control training',
+                '🍎 Fruits waste shows seasonal pattern - optimize ordering based on demand forecasting',
+                '📊 Overall waste rate 5.6% is near target - small improvements yield significant savings'
+            ],
+            
+            recommendations: [
+                '**Dynamic Pricing Strategy**: Implement AI-powered discount scheduling for items nearing expiration. Expected savings: RM 1,200/month',
+                '**Inventory Optimization**: Use machine learning to predict demand patterns and adjust ordering quantities. Expected reduction: 15% waste decrease',
+                '**Staff Training Program**: Conduct quarterly workshops on portion control and waste awareness. Expected impact: 10% improvement',
+                '**Smart Donation Program**: Partner with local charities for surplus food donation. Expected waste reduction: 8-12kg/week',
+                '**Menu Engineering**: Analyze dish popularity and adjust menu offerings to minimize ingredient waste. Expected savings: RM 800/month',
+                '**Temperature Monitoring**: Install IoT sensors to ensure optimal storage conditions and reduce spoilage. Expected reduction: 5% waste decrease'
+            ],
+            
+            risk_level: 'medium',
+            
+            savings_potential: {
+                monthly_potential: 2400,
+                annual_potential: 28800,
+                percentage_reduction: 0.6
+            },
+            
+            category_analysis: [
+                {
+                    category: 'Vegetables',
+                    waste_amount: 28,
+                    percentage: 28,
+                    cost_impact: 'RM 5,040',
+                    trend: 'stable',
+                    recommendation: 'Implement FIFO rotation system and daily freshness checks'
+                },
+                {
+                    category: 'Meat',
+                    waste_amount: 22,
+                    percentage: 22,
+                    cost_impact: 'RM 6,600',
+                    trend: 'increasing',
+                    recommendation: 'Review portion sizes and consider pre-portioning during prep'
+                },
+                {
+                    category: 'Fruits',
+                    waste_amount: 18,
+                    percentage: 18,
+                    cost_impact: 'RM 3,240',
+                    trend: 'stable',
+                    recommendation: 'Optimize ordering frequency and monitor seasonal demand'
+                },
+                {
+                    category: 'Dairy',
+                    waste_amount: 15,
+                    percentage: 15,
+                    cost_impact: 'RM 2,250',
+                    trend: 'decreasing',
+                    recommendation: 'Continue current practices - showing improvement'
+                },
+                {
+                    category: 'Bakery',
+                    waste_amount: 12,
+                    percentage: 12,
+                    cost_impact: 'RM 1,440',
+                    trend: 'stable',
+                    recommendation: 'Consider day-old discounts or donation partnerships'
+                },
+                {
+                    category: 'Other',
+                    waste_amount: 5,
+                    percentage: 5,
+                    cost_impact: 'RM 750',
+                    trend: 'stable',
+                    recommendation: 'Maintain current waste management practices'
+                }
+            ],
+            
+            data_quality_score: 92,
+            confidence_level: 'high',
+            last_updated: new Date().toISOString()
+        }
+    };
+    
+    // Simulate API delay for realistic experience
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    return mockAIInsights;
+    
+    /* ORIGINAL API CODE - Uncomment when Lambda is accessible
     const baseUrl = "https://c8pjgaljaa.execute-api.us-east-1.amazonaws.com/dev/ai-analysis";
 
     const res = await fetch(baseUrl, {
@@ -154,6 +282,6 @@ export async function fetchAIInsights(wasteData: WasteAnalysisResponse): Promise
     const data = await res.json();
     console.log('Raw AI insights response:', data);
     
-    // The Lambda returns the structure directly, not wrapped in another object
     return data as AIInsightsResponse;
+    */
 }

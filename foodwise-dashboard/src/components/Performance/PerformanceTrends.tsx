@@ -122,9 +122,9 @@ const PerformanceTrends: React.FC = () => {
     const [dataCache, setDataCache] = useState<Map<string, PerformanceResponse>>(new Map());
     
     // UI state
-    const [selectedDates, setSelectedDates] = useState<string[]>([]); // Start with no selection
-    const [startDate, setStartDate] = useState<string | null>(null);
-    const [endDate, setEndDate] = useState<string | null>(null);
+    const [selectedDates, setSelectedDates] = useState<string[]>(['2025-09-19']); // Start with Sept 19 selected
+    const [startDate, setStartDate] = useState<string | null>('2025-09-19');
+    const [endDate, setEndDate] = useState<string | null>('2025-09-19');
     const [currentMonth, setCurrentMonth] = useState(9); // Start with September
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
@@ -170,7 +170,7 @@ const PerformanceTrends: React.FC = () => {
     };
 
     useEffect(() => {
-        // Only load data if we have selected dates, not on initial load
+        // Auto-load mock data for Sept 19 on initial mount or when date range changes
         if (selectedRange.startDate && selectedRange.endDate) {
             // Clear existing timeout
             if (debounceTimeout) {
@@ -196,6 +196,13 @@ const PerformanceTrends: React.FC = () => {
     
     // Load initial data when component mounts
     useEffect(() => {
+        // Set initial date range for Sept 19, 2025 to auto-load mock data
+        const initialRange = {
+            startDate: '19/9/2025',
+            endDate: '19/9/2025'
+        };
+        setSelectedRange(initialRange);
+        
         // Load waste analysis data immediately when component mounts (without date filters)
         const loadInitialWasteData = async () => {
             try {
@@ -211,10 +218,6 @@ const PerformanceTrends: React.FC = () => {
         };
         
         loadInitialWasteData();
-        
-        // Optionally also load performance data with default date range
-        // You can uncomment this if you want to load performance data immediately too
-        // loadPerformanceData();
     }, []); // Empty dependency array means this runs once on mount
     
     // Get today's date in Malaysian time

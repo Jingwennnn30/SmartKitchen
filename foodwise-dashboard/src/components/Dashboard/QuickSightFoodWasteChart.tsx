@@ -1,224 +1,134 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { 
     Card, 
     Typography, 
-    Box, 
-    CircularProgress, 
-    Alert, 
-    Button,
-    Skeleton 
+    Box,
+    Chip
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 
-interface QuickSightResponse {
-    success: boolean;
-    embedUrl?: string;
-    error?: string;
-    timestamp: string;
-}
+// Mock data for food waste by category
+const wasteData = [
+    { name: 'Vegetables', value: 28, color: '#10b981' },
+    { name: 'Fruits', value: 18, color: '#f59e0b' },
+    { name: 'Dairy', value: 15, color: '#3b82f6' },
+    { name: 'Meat & Seafood', value: 22, color: '#ef4444' },
+    { name: 'Bakery', value: 12, color: '#8b5cf6' },
+    { name: 'Other', value: 5, color: '#6b7280' }
+];
+
+const totalWaste = wasteData.reduce((sum, item) => sum + item.value, 0);
 
 const QuickSightFoodWasteChart: React.FC = () => {
-    const [embedUrl, setEmbedUrl] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-
-
-    // Lambda API URL - using AWS Lambda function instead of Express.js backend
-    const LAMBDA_API_URL = 'https://bg4xe3t4be.execute-api.us-east-1.amazonaws.com/default/quicksight-foodwaste';
-
-    const fetchEmbedUrl = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            console.log('Fetching QuickSight embed URL from Lambda:', LAMBDA_API_URL);
-            
-            const response = await fetch(LAMBDA_API_URL, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                // Add timeout to prevent hanging requests
-                signal: AbortSignal.timeout(10000) // 10 second timeout
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data: QuickSightResponse = await response.json();
-            
-            if (data.success && data.embedUrl) {
-                setEmbedUrl(data.embedUrl);
-                console.log('Successfully loaded QuickSight embed URL');
-            } else {
-                throw new Error(data.error || 'Failed to get embed URL');
-            }
-
-        } catch (err) {
-            console.error('Error fetching QuickSight embed URL:', err);
-            
-            let errorMessage = 'Failed to load dashboard';
-            
-            if (err instanceof Error) {
-                if (err.name === 'AbortError') {
-                    errorMessage = 'Request timeout - please try again';
-                } else if (err.message.includes('Failed to fetch')) {
-                    errorMessage = 'Cannot connect to backend server';
-                } else {
-                    errorMessage = err.message;
-                }
-            }
-            
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    // Load embed URL on component mount
-    useEffect(() => {
-        fetchEmbedUrl();
-    }, [fetchEmbedUrl]);
-
-    const handleRetry = () => {
-        fetchEmbedUrl();
+    const renderCustomLabel = (entry: any) => {
+        const percent = ((entry.value / totalWaste) * 100).toFixed(1);
+        return `${percent}%`;
     };
 
-    // Loading state
-    if (loading) {
-        return (
-            <Card sx={{ 
-                height: '400px', 
-                p: 2,
-                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-                borderRadius: '10px',
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
-                <Typography variant="h6" gutterBottom>
-                     Food Waste Analysis
-                </Typography>
-                <Box sx={{ 
-                    flex: 1, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    gap: 2
-                }}>
-                    <CircularProgress size={40} />
-                    <Typography variant="body2" color="textSecondary">
-                        Loading QuickSight dashboard...
-                    </Typography>
-                    {/* Skeleton for better UX */}
-                    <Box sx={{ width: '100%', mt: 2 }}>
-                        <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 1 }} />
-                    </Box>
-                </Box>
-            </Card>
-        );
-    }
-
-    // Error state
-    if (error) {
-        return (
-            <Card sx={{ 
-                height: '400px', 
-                p: 2,
-                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-                borderRadius: '10px',
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
-                <Typography variant="h6" gutterBottom>
-                     Food Waste Analysis
-                </Typography>
-                <Box sx={{ 
-                    flex: 1, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    gap: 2,
-                    textAlign: 'center'
-                }}>
-                    <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />
-                    <Alert severity="error" sx={{ width: '100%' }}>
-                        <Typography variant="body2">
-                            {error}
-                        </Typography>
-                    </Alert>
-                    <Button 
-                        variant="outlined" 
-                        startIcon={<RefreshIcon />}
-                        onClick={handleRetry}
-                        size="small"
-                    >
-                        Retry
-                    </Button>
-                    {process.env.NODE_ENV === 'development' && (
-                        <Typography variant="caption" color="textSecondary">
-                            Lambda API: {LAMBDA_API_URL}
-                        </Typography>
-                    )}
-                </Box>
-            </Card>
-        );
-    }
-
-    // Success state - render QuickSight iframe
     return (
         <Card sx={{ 
             height: '400px', 
-            p: 2,
-            boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-            borderRadius: '10px',
+            p: 2.5,
+            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+            borderRadius: '12px',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            background: 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)',
+            border: '1px solid #e5e7eb'
         }}>
             <Box sx={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center',
-                mb: 1
+                mb: 2
             }}>
-                <Typography variant="h6">
-                     Food Waste Analysis
+                <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+                        Food Waste Analysis
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                        Waste breakdown by category
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Chip 
+                        icon={<TrendingDownIcon sx={{ fontSize: 16 }} />}
+                        label="-12% vs last month" 
+                        size="small" 
+                        sx={{ 
+                            bgcolor: '#ecfdf5', 
+                            color: '#059669',
+                            fontWeight: 'bold',
+                            fontSize: '0.75rem'
+                        }} 
+                    />
+                </Box>
+            </Box>
+            
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                        <Pie
+                            data={wasteData}
+                            cx="50%"
+                            cy="45%"
+                            labelLine={false}
+                            label={renderCustomLabel}
+                            outerRadius={80}
+                            innerRadius={50}
+                            fill="#8884d8"
+                            dataKey="value"
+                            animationBegin={0}
+                            animationDuration={800}
+                        >
+                            {wasteData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                        </Pie>
+                        <Tooltip 
+                            contentStyle={{
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                padding: '12px'
+                            }}
+                            formatter={(value: number) => [`${value} kg`, 'Waste']}
+                        />
+                        <Legend 
+                            verticalAlign="bottom" 
+                            height={30}
+                            iconType="circle"
+                            wrapperStyle={{
+                                fontSize: '11px',
+                                paddingTop: '5px'
+                            }}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+            </Box>
+            
+            <Box sx={{ 
+                mt: 2, 
+                pt: 2, 
+                borderTop: '1px solid #e5e7eb',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <Box>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                        Total Waste (This Month)
+                    </Typography>
+                    <Typography variant="h6" sx={{ color: '#1f2937', fontWeight: 'bold' }}>
+                        {totalWaste} kg
+                    </Typography>
+                </Box>
+                <Typography variant="caption" color="textSecondary">
+                    Last updated: {new Date().toLocaleTimeString()}
                 </Typography>
-                <Button 
-                    size="small" 
-                    startIcon={<RefreshIcon />}
-                    onClick={handleRetry}
-                    sx={{ minWidth: 'auto', px: 1 }}
-                >
-                    Refresh
-                </Button>
             </Box>
-            
-            <Box sx={{ flex: 1, overflow: 'hidden', borderRadius: 1 }}>
-                <iframe
-                    src={embedUrl || ''}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        border: 'none',
-                        borderRadius: '8px'
-                    }}
-                    title="Food Waste Analysis Dashboard"
-                    onLoad={() => console.log('QuickSight dashboard loaded successfully')}
-                    onError={(e) => {
-                        console.error('QuickSight iframe error:', e);
-                        setError('Failed to load dashboard content');
-                    }}
-                />
-            </Box>
-            
-            {/* Optional: Show last updated timestamp */}
-            <Typography variant="caption" color="textSecondary" sx={{ mt: 1, textAlign: 'right' }}>
-                Last updated: {new Date().toLocaleTimeString()}
-            </Typography>
         </Card>
     );
 };
